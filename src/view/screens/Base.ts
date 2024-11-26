@@ -13,4 +13,5 @@ export class BaseScreen {
     }
     render(){}
     update(){}
+    keyHandle(k: string){}
 }

@@ -14,8 +14,8 @@ const getSimplifiedText = (text:string): string => {
 // components props :  content, height
 export const getBuffer = (componentsList : {
     content: string,
-    height: number,
-    margin: number
+    height?: number,
+    margin?: number
 }[]): string=>{
     let buffer: string = ""; // buffer for the renderer
     let maxCharLimit: number = 0 // max char limit for each component
@@ -23,6 +23,10 @@ export const getBuffer = (componentsList : {
     let viewableContent : string = ""
     for(const component of componentsList){
         component.content = component.content.replace("\t", tabValue)
+        if(!component.height) component.height = 1; // default height 1
+        if(!component.margin) component.margin = 0; // default margin 0 (bottom margin)
+
+
         maxCharLimit = terminalDimension.width * component.height;
         viewableContent = component.content.slice(0, maxCharLimit)
         contentHeight = Math.ceil(viewableContent.length / terminalDimension.width)

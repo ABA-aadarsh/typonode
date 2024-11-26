@@ -1,8 +1,5 @@
 import process from "node:process"
 
-const paddingText = "    " // 4 spaces
-
-
 export const terminalDimension = {
     width: process.stdout.columns,
     height: process.stdout.rows
@@ -16,4 +13,12 @@ export const writeOnScreen = (
     process.stdout.cursorTo(pos1.x, pos1.y)
     process.stdout.clearScreenDown()
     process.stdout.write(data)
+}
+
+export const disableCursor = (): void => {
+    process.stdout.write("\x1B[?25l");
+}
+
+export const enableCursor = (): void => {
+    process.stdout.write("\x1B[?25h");
 }

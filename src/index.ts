@@ -1,6 +1,13 @@
-import { MainScreen } from "./view/screens/main";
+import { SM } from "./view/ScreenManager";
+import process from "node:process"
 
-const ms = new MainScreen({refreshStyle: "interval", fps: 60})
+const sm = new SM()
+process.stdin.on("data", (buffer: Buffer)=>{
+    const key = String(buffer)
+    sm.keyHandle(key)
+})
 
 
-ms.render()
+setInterval(() => {
+    sm.render();
+}, 300);
