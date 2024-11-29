@@ -22,3 +22,7 @@ export const disableCursor = (): void => {
 export const enableCursor = (): void => {
     process.stdout.write("\x1B[?25h");
 }
+
+export const clearScreen = ()=>{
+    process.stdout.write('\x1B[2J'); // Clear the screen
+}

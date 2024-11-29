@@ -2,43 +2,114 @@ import ANSI_CODES, { ansiValues } from "./ansiCodes"
 
 // chalky: ansi escape code based text formatter. stripped down version of chalk.js
 class Chalky {
-  stylesList : Set<string>
+  stylesList: Set<number> // ansi code numbers set
   constructor() {
-    this.stylesList= new Set<string>()
+    this.stylesList = new Set<number>()
   }
-  private applyStyles (text: string){
-    let styledText : string = ""
+  private applyStyles(text: string) {
+    let styledText: string
     const resetANSI = ANSI_CODES.reset
-    for(const style of this.stylesList){
-      styledText += style
-    }
-    styledText+= text + resetANSI;
+    styledText = this.getAnsiCode([...this.stylesList]) + text + this.getAnsiCode(resetANSI)
     this.stylesList.clear()
     return styledText
   }
-  style(text: string, listOfStyles: string[]) {
-    let styledText : string = ""
-    for(let i = 0; i<listOfStyles.length; i++){
-      if(ansiValues.has(listOfStyles[i])){
-        styledText += listOfStyles[i]
+  style(text: string, listOfStyles: number[]) {
+    for (let i = 0; i < listOfStyles.length; i++) {
+      if (ansiValues.has(listOfStyles[i])) {
+        this.stylesList.add(listOfStyles[i])
       }
     }
-    styledText += text + ANSI_CODES.reset
-    return styledText
+    return this.applyStyles(text)
   }
-  private proxy = new Proxy (this.applyStyles, 
+  private proxy = new Proxy(this.applyStyles,
     {
-      get: (target: (text:string)=>{}, prop)=>{
-        if(prop in this){
+      get: (target: (text: string) => {}, prop) => {
+        if (prop in this) {
           return (this as any)[prop]
         }
         return null
       },
-      apply: (target: (...args: any)=>{}, thisArg: any, argArray: any[])=>{
+      apply: (target: (...args: any) => {}, thisArg: any, argArray: any[]) => {
         return target(...argArray);
       }
     }
   )
+  private getAnsiCode(code: number[] | number): string {
+    if (typeof code == "number") {
+      return `\x1b[${code}m`
+    }
+    return `\x1b[${code.join(";")}m`
+  }
+
+
+  public parseAnsi = (ansiCodedText: string): {
+    parsed: {
+      codes: number[],
+      text: string
+    }[],
+    normalTextLength: number,
+    ansiTextLength: number,
+    ansiCodesCount: number
+  } => {
+    let i: number;
+    let normalTextLength: number = 0;
+    let text: string = ""
+    let stylesCode: number[] = []
+    let ansiCodesCount: number = 0;
+    const parsed: { codes: number[], text: string }[] = []
+    const ESC: string = "\x1b"
+    for (i = 0; i < ansiCodedText.length; i++) {
+      if (ansiCodedText[i] == ESC) {
+        // ansi codes handle
+        if (text != "") {
+          console.log("Text: ", text)
+          parsed.push(
+            {
+              codes: stylesCode,
+              text: text
+            }
+          )
+          normalTextLength += text.length
+          text = "";
+          stylesCode = [];
+        }
+        i++; // skip ESC
+
+        if (ansiCodedText[i] == "[") {
+          i++; // skip [
+          let codeString: string = ""
+          while (i < ansiCodedText.length && ansiCodedText[i] != "m") {
+            codeString += ansiCodedText[i]
+            i++;
+          }
+          ansiCodesCount += codeString.split(";").length
+          stylesCode.push(
+            ...codeString.split(";").map(Number)
+          )
+        }
+        // i++ done by the for loop will skip the "m"
+      }
+      else {
+        // handle normal text
+        text += ansiCodedText[i]
+      }
+    }
+    if (text) {
+      normalTextLength += text.length
+      parsed.push(
+        {
+          codes: stylesCode,
+          text: text
+        }
+      )
+    }
+    return {
+      parsed,
+      normalTextLength,
+      ansiTextLength: ansiCodedText.length - normalTextLength,
+      ansiCodesCount
+    }
+  }
 }
 
 const chalky = new Chalky()
