@@ -5,6 +5,7 @@ import { BaseScreen } from "./screens/Base";
 import { MainScreen } from "./screens/main";
 import { SettingScreen } from "./screens/settings";
 import { clearScreen, disableCursor, enableCursor, writeOnScreen } from "../utils/io";
+import { setInterval } from "node:timers";
 
 
 // stdin and stdout configure
@@ -17,6 +18,7 @@ process.stdin.resume()
 // SM - ScreenManager
 export class SM {
     private screensList : {id: string, screen: BaseScreen}[] = [];
+    private intervalRunning : null | ReturnType<typeof setInterval>
     private currentScreen: BaseScreen | null = null;
     private currentScreenId: string | null = null
     private commands = {
@@ -33,14 +35,14 @@ export class SM {
         this.currentScreenId = "main"
         this.currentScreen = this.screensList[0].screen
         this.justSwitched = true
+        this.intervalRunning = null
     }
     keyHandle(k: string){
         switch(k){
             case this.commands.exit: 
                 enableCursor();
-                // clearing screen before exiting
                 clearScreen()
-
+                if(this.intervalRunning) clearInterval(this.intervalRunning);
                 process.exit();
             case this.commands.switchToMain: 
                 this.switchScreen("main")
@@ -54,7 +56,6 @@ export class SM {
     }
     private switchScreen(newScreenId: string){
         if(this.currentScreenId != newScreenId){
-            console.log("New screen: ", newScreenId)
             const nsIndex = this.screensList.findIndex(x=>x.id==newScreenId)
             if(nsIndex!=-1){
                 this.currentScreenId = newScreenId
@@ -73,5 +74,16 @@ export class SM {
             this.currentScreen.render(this.justSwitched); // do clean rendering is just switched
             if(this.justSwitched) this.justSwitched = false;
         }
+    }
+
+    intiateAnimation (){
+        // manages the interval system for rendering and updation
+        if(this.intervalRunning!=null){
+            clearInterval(this.intervalRunning)
+        }
+        this.intervalRunning = setInterval(() => {
+            this.update()
+            this.render()
+        }, 1000/10); //TODO: different screen may have different interval
     }
 }

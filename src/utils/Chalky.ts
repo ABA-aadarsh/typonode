@@ -41,6 +41,10 @@ class Chalky {
     return `\x1b[${code.join(";")}m`
   }
 
+  public stripAnsi (ansiString: string): string {
+    // TODO: input: \x1b[30mHelloWorld , output : HelloWorld
+    return ""
+  }
 
   public parseAnsi = (ansiCodedText: string): {
     parsed: {
@@ -62,7 +66,6 @@ class Chalky {
       if (ansiCodedText[i] == ESC) {
         // ansi codes handle
         if (text != "") {
-          console.log("Text: ", text)
           parsed.push(
             {
               codes: stylesCode,

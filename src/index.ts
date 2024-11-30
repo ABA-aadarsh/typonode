@@ -9,13 +9,6 @@ process.stdin.on("data", (buffer: Buffer)=>{
     const key = String(buffer)
     sm.keyHandle(key)
 })
-
 // initial screen clearing
 clearScreen()
-
-
-
-setInterval(() => {
-    sm.update()
-    sm.render();
-}, 1000/10);
+sm.intiateAnimation();

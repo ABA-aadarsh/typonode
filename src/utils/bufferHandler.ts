@@ -49,10 +49,43 @@ export class BufferHandler {
                 )
                 x++;
             }
+            if(x>this.width){
+                break;
+            }
         }
         if(clearAfter && parsedResult.normalTextLength < this.width){
             for(let i=parsedResult.normalTextLength; i<this.width; i++){
                 this.updateCell(i, y, " ")
+            }
+        }
+    }
+
+    public updateBlock (x:number, y:number, w: number, ansiString: string): void {
+        if(x>this.width) return; // x can't be greater than width of the screen
+        const parsedResult = chalky.parseAnsi(ansiString)
+        const parsed = parsedResult.parsed
+        const max = Math.min(w, this.width - x)
+        let chunkIndex: number = 0 // iterate through parsed
+        let charIndex: number = 0 // iterate through string of parsed[chunkIndex]
+        let i: number = 0 // iterate through the buffer blocks
+        for(i; i< max; i++ ){
+            if(chunkIndex>parsed.length) break;
+            if(charIndex>parsed[chunkIndex].text.length){
+                charIndex = 0;
+                chunkIndex++;
+                if(chunkIndex>parsed.length) break;
+            }
+            this.updateCell(
+                x + i,
+                y,
+                parsed[chunkIndex].text[charIndex]
+            )
+            charIndex++;
+        }
+        if(i<max){
+            // if the there is more block length than the text, make remaining blocks empty
+            for(i; i<max; i++){
+                this.updateCell(x + i, y, " ")
             }
         }
     }

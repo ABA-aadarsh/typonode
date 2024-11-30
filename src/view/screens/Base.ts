@@ -22,6 +22,7 @@ export class BaseScreen {
             this.bh.forceDirtyAll()
             clearScreen()
         }
+        process.stdout.cursorTo(0,0)
         process.stdout.write(this.bh.updateBuffer());
     }
     update(){}
