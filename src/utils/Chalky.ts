@@ -6,14 +6,14 @@ class Chalky {
   constructor() {
     this.stylesList = new Set<number>()
   }
-  private applyStyles(text: string) {
+  private applyStyles(text: string | number) {
     let styledText: string
     const resetANSI = ANSI_CODES.reset
     styledText = this.getAnsiCode([...this.stylesList]) + text + this.getAnsiCode(resetANSI)
     this.stylesList.clear()
     return styledText
   }
-  style(text: string, listOfStyles: number[]) {
+  style(text: string | number, listOfStyles: number[]) {
     for (let i = 0; i < listOfStyles.length; i++) {
       if (ansiValues.has(listOfStyles[i])) {
         this.stylesList.add(listOfStyles[i])
@@ -113,6 +113,11 @@ class Chalky {
       ansiCodesCount
     }
   }
+
+
+
+
+  // get red(): {}
 }
 
 const chalky = new Chalky()

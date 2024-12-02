@@ -64,21 +64,21 @@ export class BufferHandler {
         if(x>this.width) return; // x can't be greater than width of the screen
         const parsedResult = chalky.parseAnsi(ansiString)
         const parsed = parsedResult.parsed
-        const max = Math.min(w, this.width - x)
+        const max = Math.min((w!=-1) ? w : parsedResult.normalTextLength, this.width - x)
         let chunkIndex: number = 0 // iterate through parsed
         let charIndex: number = 0 // iterate through string of parsed[chunkIndex]
         let i: number = 0 // iterate through the buffer blocks
         for(i; i< max; i++ ){
-            if(chunkIndex>parsed.length) break;
-            if(charIndex>parsed[chunkIndex].text.length){
+            if(chunkIndex>=parsed.length) break;
+            if(charIndex>=parsed[chunkIndex].text.length){
                 charIndex = 0;
                 chunkIndex++;
-                if(chunkIndex>parsed.length) break;
+                if(chunkIndex>=parsed.length) break;
             }
             this.updateCell(
                 x + i,
                 y,
-                parsed[chunkIndex].text[charIndex]
+                chalky.style(parsed[chunkIndex].text[charIndex], parsed[chunkIndex].codes)
             )
             charIndex++;
         }
@@ -113,6 +113,12 @@ export class BufferHandler {
             }
         }
         return updationString
+    }
+
+    public clearBlock(x: number, y: number, w:number){
+        for(let i=0; i<w; i++){
+            this.updateCell(x+i, y, " ")
+        }
     }
 
     // public checkWithString(compareString: string, yStart: number){

@@ -4,8 +4,6 @@
 
 // NOTE: here update methods are to update the view buffer as well, render methods makes the updated buffer visible on screen
 import ANSI_CODES from "../../utils/ansiCodes";
-import { getBuffer } from "../../utils/Block";
-import { BufferHandler } from "../../utils/bufferHandler";
 import chalky from "../../utils/Chalky";
 import { terminalDimension, writeOnScreen } from "../../utils/io";
 import { newTest } from "../../utils/testGenerate";
@@ -13,31 +11,55 @@ import { BaseScreen } from "./Base";
 export class MainScreen extends BaseScreen {
     private testText: string[];
     private testParams: any = null
-    private wpm : number;
+
     private correctWordsCount : number = 0;
+    private errorWordsCount: number = 0
+    
     private correctCharCount: number = 0;
+    private errorCharCount: number = 0
+    private skippedCharCount: number = 0
+
     private startTime : number | null = null
-    private cpm : number;
     running: boolean // indicates whether the speed test has started or not
     private userTypedWords: string[] // words users typed (no fromatting)
     private formattedUserWords: {formattedWord: string, letterCount: number}[] // formatted user typed words  shown in the screen
+
     private currentWordIndex: number
+    private currentCharIndex: number
+    //  currentCharIndex is always equal to currentWord.length, it is to point the next char to be typed in testText[currentWordIndex] if it is not beyond the limit
     private currentWord: string
+
+
+    private commands = {
+        "restart": "\x12"
+    }
     constructor() {
         super({ refreshStyle: "interval", fps: 30 , dimension: {width: terminalDimension.width, height: terminalDimension.height}})
         this.testText = this.generateTest();
         this.running = false; // TODO: the changing of this.running mechanism implementation
         this.userTypedWords = []
         this.currentWordIndex = 0
-        this.wpm = 0
-        this.cpm = 0
+        this.currentCharIndex = 0
         this.currentWord = ""
         this.formattedUserWords = []
     }
 
-    public start() {
+    private resetVariables (){
+        // reset the variables to their default value
+        this.running = false
         this.correctCharCount = 0
+        this.skippedCharCount = 0
+        this.errorCharCount = 0
         this.correctWordsCount = 0
+        this.errorWordsCount = 0
+        this.currentWord = ""
+        this.currentWordIndex = 0
+        this.userTypedWords = []
+        this.formattedUserWords = []
+    }
+
+    public start() {
+        this.resetVariables()
         this.startTime = new Date().getTime()
         this.running = true
     }
@@ -50,22 +72,50 @@ export class MainScreen extends BaseScreen {
         return newTest(null)
     }
     public keyHandle(k: string): void {
+        // commands handle
+        switch(k){
+            case this.commands.restart: 
+                this.refresh();
+                return;
+            default: 
+                break;
+        }
+
+        // normal char handle
+        if(this.currentWordIndex >= this.testText.length){
+            this.refresh()
+            return
+        }
         if (k == '\t' || k == '\b' || k == '\r' || k == ' ') {
             if (this.currentWord == "") return;
             else if(k=='\b'){
+                const lastChar = this.currentWord[this.currentCharIndex - 1]
+                if(this.currentCharIndex >= this.testText[this.currentWordIndex].length){
+                    this.errorCharCount -= 1
+                }else{
+                    if(lastChar == this.testText[this.currentWordIndex][this.currentCharIndex - 1]) this.correctCharCount -= 1
+                    else this.errorCharCount -= 1
+                }
+
                 this.currentWord = this.currentWord.slice(0, this.currentWord.length-1)
+                this.currentCharIndex -= 1
             }
             else {
-                if(this.currentWordIndex > this.testText.length) return;
+                if(this.currentWordIndex > this.testText.length) return; // TODO: more test words as the user goes to the end of selected words limit ?
+
                 this.userTypedWords.push(this.currentWord);
                 this.formattedUserWords.push(
                     {...this.formatWord(this.currentWord, this.testText[this.currentWordIndex], true)}
                 )
                 if(this.currentWord == this.testText[this.currentWordIndex]){
                     this.correctWordsCount += 1
+                }else{
+                    this.skippedCharCount += Math.max(0, this.testText[this.currentWordIndex].length - this.currentWord.length)
+                    this.errorWordsCount += 1
                 }
                 this.currentWord = ""
                 this.currentWordIndex += 1
+                this.currentCharIndex = 0
                 return;
             }
         }
@@ -76,11 +126,16 @@ export class MainScreen extends BaseScreen {
             (code > 32 && code < 48 ) // special characters
         ) {
             if(this.running==false) this.start();
+            if(this.currentCharIndex < this.testText[this.currentWordIndex].length){
+                if(this.testText[this.currentWordIndex][this.currentCharIndex]==k) this.correctCharCount += 1
+                else this.errorCharCount += 1
+            }else this.errorCharCount += 1
             this.currentWord += k;
+            this.currentCharIndex += 1
         }
     }
 
-    private formatWord(userWord: string, testWord: string, completed: boolean = true): 
+    private formatWord(userWord: string, testWord: string, completed: boolean = true, isCurrent: boolean = false): 
         {
             formattedWord: string,
             letterCount: number,
@@ -99,11 +154,15 @@ export class MainScreen extends BaseScreen {
         }
         if (testWord.length > userWord.length) {
             formattedWord += chalky.style(testWord.slice(i), [
-                (completed ? ANSI_CODES.red : ANSI_CODES.dim)
+                (completed ? ANSI_CODES.yellow : ANSI_CODES.dim)
                 // if the word is completed (before currentword) then mark its incompleteness with red else with grey
             ])
         } else if (userWord.length > testWord.length) {
-            formattedWord += chalky.style(userWord.slice(i), [ANSI_CODES.yellow])
+            formattedWord += chalky.style(userWord.slice(i), [ANSI_CODES.red, ANSI_CODES.underline])
+        }
+
+        if(isCurrent){
+            formattedWord = "[" + formattedWord + "]"
         }
         return {
             formattedWord: formattedWord,
@@ -113,7 +172,8 @@ export class MainScreen extends BaseScreen {
     }
 
     public refresh() {
-        this.testText = this.generateTest();
+        this.resetVariables()
+        this.testText = this.generateTest()
     }
     public updateTestSettings() {
         //TODO: modify the time, words format etc
@@ -133,13 +193,14 @@ export class MainScreen extends BaseScreen {
             }else{
                 const formatResult = this.formatWord(
                     (i==this.currentWordIndex) ? this.currentWord : ""
-                    , this.testText[i], false
+                    , this.testText[i], false,
+                    i == this.currentWordIndex
                 )
                 formattedWord = formatResult.formattedWord
                 letterCount = formatResult.letterCount
             }
 
-            if(charCount + letterCount > maxCharLimit){
+            if(charCount + letterCount + 2 > maxCharLimit){ // 2 to account for possibility of having [] on currentWord
                 // in new line
                 lines.push(currentLine)
                 currentLine = formattedWord + " "
@@ -150,25 +211,43 @@ export class MainScreen extends BaseScreen {
                 charCount += letterCount + 1
             }
         }
+        if(currentLine!=""){
+            lines.push(currentLine)
+        }
         return lines
     }
 
-    private getWPM (){
+    private getWPM ():number{
         if(this.running && this.startTime){
-            return Math.round((this.correctWordsCount * 60)/((new Date().getTime() - this.startTime)/1000))
+            return Math.round((this.correctCharCount * 60/5)/((new Date().getTime() - this.startTime)/1000))
+            //  cant use correctwords for wpm since not all words are born equal. average english word is of 5 charaacters
         }
-        return null
+        return -1
     }
-
+    private getCPM (): number{
+        if(this.running && this.startTime){
+            return Math.round((this.correctCharCount * 60 )/ ((new Date().getTime()- this.startTime)/1000))
+        }
+        return -1
+    }
     private updateTitle (){
-        const t: number | null = (this.startTime ? Math.round((new Date().getTime() - this.startTime)/1000): null)
-        const wpm =  "WPM: " +this.getWPM()
-        const title = 
-        `${this.running ? wpm + "  (" + t + ")": "    "}        TypoTest`
-        this.bh.updateLine(
-            0,
-            title
+        this.bh.updateBlock(Math.floor(this.bh.width/2) - 4, 0, -1,
+            "[" + chalky.style("T",[ANSI_CODES.green]) + chalky.style("yp", [ANSI_CODES.red, ANSI_CODES.underline]) + chalky.style("oTest", [ANSI_CODES.green]) + "]"
         )
+        if(!this.running || !this.startTime){
+            // this.bh.updateBlock(0,2, -1, chalky.style("Start Typing ....", [ANSI_CODES.yellow]))
+            this.bh.updateLine(2, chalky.style("Start Typing...", [ANSI_CODES.yellow, ANSI_CODES.italic]))
+        }else{
+            const leftPart = `${this.getWPM()} wpm (${chalky.style(this.correctWordsCount,[ANSI_CODES.green])}/${chalky.style(this.errorWordsCount,[ANSI_CODES.red])})     ${this.getCPM()} cpm (${chalky.style(this.correctCharCount,[ANSI_CODES.green])}/${chalky.style(this.errorCharCount,[ANSI_CODES.red])}/${chalky.style(this.skippedCharCount, [ANSI_CODES.yellow])})`
+            const rightPart = `Time Remaining: ${chalky.style(Math.max(0, Math.floor(60 - (new Date().getTime() - (this.startTime))/1000)) + "s", [ANSI_CODES.yellow])}`
+
+            const gapping = this.bh.width - rightPart.length - chalky.parseAnsi(leftPart).normalTextLength
+            this.bh.updateLine(
+                2, 
+                leftPart + " ".repeat(gapping) + rightPart,
+                true
+            )
+        }
     }
     private updateTestSection (){
         const ansiFormattedLines = this.getFormattedDisplayTest()
@@ -184,10 +263,21 @@ export class MainScreen extends BaseScreen {
             15, ": " + this.currentWord, true
         )
     }
+    private updateBottomPanel(){
+        this.bh.updateLine(
+            this.bh.height - 4, 
+            `${chalky.style(" ctrl + c: exit ", [ANSI_CODES.bgYellow])}     ${chalky.style(" ctrl + s: settings ", [ANSI_CODES.bgWhite, ANSI_CODES.black])}      ${chalky.style(" ctrl + r: restart ", [ANSI_CODES.bgCyan])}  `,
+            true
+        )
+        this.bh.updateLine(
+            this.bh.height - 2,
+            "Highest WPM Record: 50"
+        )
+    }
     public update(): void {
-        
         this.updateTitle();
         this.updateTestSection();
         this.updateCurrentWordSection();
+        this.updateBottomPanel();
     }
 }

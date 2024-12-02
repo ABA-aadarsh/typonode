@@ -22,7 +22,7 @@ export class SM {
     private currentScreen: BaseScreen | null = null;
     private currentScreenId: string | null = null
     private commands = {
-        "exit": "\x03", // ctrl - q
+        "exit": "\x03", // ctrl - c
         "switchToMain" : "\x14", // ctrl - t
         "switchToSettings" : "\x13", // ctrl - s
     }
