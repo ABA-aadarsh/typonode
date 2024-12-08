@@ -5,13 +5,15 @@
 // NOTE: here update methods are to update the view buffer as well, render methods makes the updated buffer visible on screen
 import ANSI_CODES from "../../utils/ansiCodes";
 import chalky from "../../utils/Chalky";
+import EventBus from "../../utils/eventBus";
 import { terminalDimension, writeOnScreen } from "../../utils/io";
 import { newTest } from "../../utils/testGenerate";
 import { BaseScreen } from "./Base";
 export class MainScreen extends BaseScreen {
     private testText: string[];
-    private testParams: any = null
-
+    private testParams: {
+        timeLimit: number
+    }
     private correctWordsCount : number = 0;
     private errorWordsCount: number = 0
     
@@ -20,6 +22,7 @@ export class MainScreen extends BaseScreen {
     private skippedCharCount: number = 0
 
     private startTime : number | null = null
+    private timeRemaining: number | null = null
     running: boolean // indicates whether the speed test has started or not
     private userTypedWords: string[] // words users typed (no fromatting)
     private formattedUserWords: {formattedWord: string, letterCount: number}[] // formatted user typed words  shown in the screen
@@ -33,8 +36,12 @@ export class MainScreen extends BaseScreen {
     private commands = {
         "restart": "\x12"
     }
-    constructor() {
-        super({ refreshStyle: "interval", fps: 30 , dimension: {width: terminalDimension.width, height: terminalDimension.height}})
+    constructor(
+        {eventHandler}: {
+            eventHandler: EventBus
+        }
+    ) {
+        super({ refreshStyle: "interval", fps: 30 , dimension: {width: terminalDimension.width, height: terminalDimension.height}, eventHandler: eventHandler})
         this.testText = this.generateTest();
         this.running = false; // TODO: the changing of this.running mechanism implementation
         this.userTypedWords = []
@@ -42,6 +49,11 @@ export class MainScreen extends BaseScreen {
         this.currentCharIndex = 0
         this.currentWord = ""
         this.formattedUserWords = []
+
+        // TODO: test params should be saved for future use
+        this.testParams = {
+            timeLimit : 30 // in seconds
+        }
     }
 
     private resetVariables (){
@@ -56,11 +68,13 @@ export class MainScreen extends BaseScreen {
         this.currentWordIndex = 0
         this.userTypedWords = []
         this.formattedUserWords = []
+        this.timeRemaining = null
     }
 
     public start() {
         this.resetVariables()
         this.startTime = new Date().getTime()
+        this.timeRemaining = this.testParams.timeLimit
         this.running = true
     }
 
@@ -216,6 +230,38 @@ export class MainScreen extends BaseScreen {
         }
         return lines
     }
+    private showTestResult(){
+        const resultData : {wpm: number, cpm: number,
+            charactersInfo: {
+                correct: number,
+                error: number,
+                skipped: number
+            },
+            wordsInfo: {
+                correct: number,
+                error: number
+            },
+            formattedWords: {formattedWord: string, letterCount: number}[],
+            timeLimit: number
+        } ={
+            wpm: this.getWPM(),
+            cpm: this.getCPM(),
+            charactersInfo: {
+                correct: this.correctCharCount,
+                error: this.errorCharCount,
+                skipped: this.skippedCharCount
+            },
+            wordsInfo: {
+                correct: this.correctWordsCount,
+                error: this.errorWordsCount
+            },
+            timeLimit: this.testParams.timeLimit,
+            formattedWords: this.formattedUserWords
+        }
+        this.eventHandler.emit("displayResult", resultData)
+        this.stop();
+        this.refresh();
+    }
 
     private getWPM ():number{
         if(this.running && this.startTime){
@@ -236,10 +282,11 @@ export class MainScreen extends BaseScreen {
         )
         if(!this.running || !this.startTime){
             // this.bh.updateBlock(0,2, -1, chalky.style("Start Typing ....", [ANSI_CODES.yellow]))
-            this.bh.updateLine(2, chalky.style("Start Typing...", [ANSI_CODES.yellow, ANSI_CODES.italic]))
+            this.bh.updateLine(2, chalky.style("Start Typing...", [ANSI_CODES.yellow, ANSI_CODES.italic]), true)
         }else{
             const leftPart = `${this.getWPM()} wpm (${chalky.style(this.correctWordsCount,[ANSI_CODES.green])}/${chalky.style(this.errorWordsCount,[ANSI_CODES.red])})     ${this.getCPM()} cpm (${chalky.style(this.correctCharCount,[ANSI_CODES.green])}/${chalky.style(this.errorCharCount,[ANSI_CODES.red])}/${chalky.style(this.skippedCharCount, [ANSI_CODES.yellow])})`
-            const rightPart = `Time Remaining: ${chalky.style(Math.max(0, Math.floor(60 - (new Date().getTime() - (this.startTime))/1000)) + "s", [ANSI_CODES.yellow])}`
+
+            const rightPart = `Time Remaining: ${chalky.style(Math.max(0, this.timeRemaining || 0 ) + "s", [ANSI_CODES.yellow])}`
 
             const gapping = this.bh.width - rightPart.length - chalky.parseAnsi(leftPart).normalTextLength
             this.bh.updateLine(
@@ -263,6 +310,10 @@ export class MainScreen extends BaseScreen {
             15, ": " + this.currentWord, true
         )
     }
+    private updateTimeRemaining(){
+        if(this.running && this.startTime)
+        this.timeRemaining = Math.round(this.testParams.timeLimit - (new Date().getTime()- this.startTime)/1000)
+    }
     private updateBottomPanel(){
         this.bh.updateLine(
             this.bh.height - 4, 
@@ -275,6 +326,10 @@ export class MainScreen extends BaseScreen {
         )
     }
     public update(): void {
+        this.updateTimeRemaining();
+        if(this.running && this.timeRemaining && this.timeRemaining<=0){
+            this.showTestResult();
+        }
         this.updateTitle();
         this.updateTestSection();
         this.updateCurrentWordSection();

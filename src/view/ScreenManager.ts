@@ -6,6 +6,8 @@ import { MainScreen } from "./screens/main";
 import { SettingScreen } from "./screens/settings";
 import { clearScreen, disableCursor, enableCursor, writeOnScreen } from "../utils/io";
 import { setInterval } from "node:timers";
+import EventBus from "../utils/eventBus";
+import { ResultScreen } from "./screens/result";
 
 
 // stdin and stdout configure
@@ -17,10 +19,13 @@ process.stdin.resume()
 
 // SM - ScreenManager
 export class SM {
+    private eventHandler = new EventBus();
+
     private screensList : {id: string, screen: BaseScreen}[] = [];
     private intervalRunning : null | ReturnType<typeof setInterval>
     private currentScreen: BaseScreen | null = null;
     private currentScreenId: string | null = null
+    private fps: number = 10;
     private commands = {
         "exit": "\x03", // ctrl - c
         "switchToMain" : "\x14", // ctrl - t
@@ -29,13 +34,21 @@ export class SM {
     private justSwitched : boolean // justSwitched is set when the switching occurs and after the render it is unset. on justswitched = true, the screen.render will clear entire screen and render
     constructor(){
         this.screensList = [
-            {id: "main", screen:  new MainScreen()},
-            {id: "setting", screen: new SettingScreen()}
+            {id: "main", screen:  new MainScreen({eventHandler: this.eventHandler})},
+            {id: "setting", screen: new SettingScreen({eventHandler: this.eventHandler})},
+            {id: "result", screen: new ResultScreen({eventHandler: this.eventHandler})}
         ]
         this.currentScreenId = "main"
         this.currentScreen = this.screensList[0].screen
         this.justSwitched = true
         this.intervalRunning = null
+
+        this.eventHandler.on(
+            "displayResult", (data)=>{
+                (this.screensList[2].screen as ResultScreen).setResultData(data)
+                this.switchScreen("result")
+            }
+        )
     }
     keyHandle(k: string){
         switch(k){
@@ -66,6 +79,7 @@ export class SM {
     }
     update(){
         if(this.currentScreen){
+            if(this.justSwitched) this.currentScreen.refresh()
             this.currentScreen.update();
         }
     }
@@ -84,6 +98,6 @@ export class SM {
         this.intervalRunning = setInterval(() => {
             this.update()
             this.render()
-        }, 1000/10); //TODO: different screen may have different interval
+        }, 1000/this.fps); //TODO: different screen may have different interval
     }
 }

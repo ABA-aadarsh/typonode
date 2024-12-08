@@ -40,6 +40,7 @@ export class BufferHandler {
     public updateLine (y:number, ansiString: string, clearAfter: boolean = false){
         let parsedResult = chalky.parseAnsi(ansiString)
         const parsed = parsedResult.parsed
+        
         let x: number = 0;
         for(let i = 0; i<parsed.length; i++){
             const {codes, text} = parsed[i]

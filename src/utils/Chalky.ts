@@ -1,9 +1,9 @@
+// chalky: ansi escape code based text formatter. stripped down version of chalk.js
 import ANSI_CODES, { ansiValues } from "./ansiCodes"
 
-// chalky: ansi escape code based text formatter. stripped down version of chalk.js
-class Chalky {
-  stylesList: Set<number> // ansi code numbers set
-  constructor() {
+class ChalkyMainUtility {
+  stylesList: Set<number>
+  constructor(){
     this.stylesList = new Set<number>()
   }
   private applyStyles(text: string | number) {
@@ -40,12 +40,10 @@ class Chalky {
     }
     return `\x1b[${code.join(";")}m`
   }
-
   public stripAnsi (ansiString: string): string {
     // TODO: input: \x1b[30mHelloWorld , output : HelloWorld
     return ""
   }
-
   public parseAnsi = (ansiCodedText: string): {
     parsed: {
       codes: number[],
@@ -113,11 +111,11 @@ class Chalky {
       ansiCodesCount
     }
   }
+}
 
 
-
-
-  // get red(): {}
+class Chalky extends ChalkyMainUtility {
+  // TODO: add getter methods for basic formatting
 }
 
 const chalky = new Chalky()
