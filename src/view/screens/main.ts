@@ -12,7 +12,8 @@ import { BaseScreen } from "./Base";
 export class MainScreen extends BaseScreen {
     private testText: string[];
     private testParams: {
-        timeLimit: number
+        timeLimit: number,
+        onlyLowerCase: boolean
     }
     private correctWordsCount : number = 0;
     private errorWordsCount: number = 0
@@ -42,7 +43,6 @@ export class MainScreen extends BaseScreen {
         }
     ) {
         super({ refreshStyle: "interval", fps: 30 , dimension: {width: terminalDimension.width, height: terminalDimension.height}, eventHandler: eventHandler})
-        this.testText = this.generateTest();
         this.running = false; // TODO: the changing of this.running mechanism implementation
         this.userTypedWords = []
         this.currentWordIndex = 0
@@ -52,8 +52,19 @@ export class MainScreen extends BaseScreen {
 
         // TODO: test params should be saved for future use
         this.testParams = {
-            timeLimit : 30 // in seconds
+            timeLimit : 30, // in seconds,
+            onlyLowerCase: false
         }
+
+        this.testText = this.generateTest();
+
+        this.eventHandler.on(
+            "settingsUpdated", (data: typeof this.testParams)=>{
+                this.testParams = {...data}
+                // create new test
+                this.refresh();
+            }
+        )
     }
 
     private resetVariables (){
@@ -83,7 +94,12 @@ export class MainScreen extends BaseScreen {
     }
 
     private generateTest() {
-        return newTest(null)
+        // fetch settings from settings screen
+        return newTest(
+            {
+                onlyLowerCase: this.testParams.onlyLowerCase
+            }
+        )
     }
     public keyHandle(k: string): void {
         // commands handle

@@ -4,10 +4,12 @@ import process from "node:process";
 import { BaseScreen } from "./screens/Base";
 import { MainScreen } from "./screens/main";
 import { SettingScreen } from "./screens/settings";
-import { clearScreen, disableCursor, enableCursor, writeOnScreen } from "../utils/io";
+import { clearScreen, disableCursor, enableCursor } from "../utils/io";
 import { setInterval } from "node:timers";
 import EventBus from "../utils/eventBus";
 import { ResultScreen } from "./screens/result";
+import chalky from "../utils/Chalky";
+import ANSI_CODES from "../utils/ansiCodes";
 
 
 // stdin and stdout configure
@@ -22,10 +24,10 @@ export class SM {
     private eventHandler = new EventBus();
 
     private screensList : {id: string, screen: BaseScreen}[] = [];
-    private intervalRunning : null | ReturnType<typeof setInterval>
+    private intervalRunning : null | NodeJS.Timeout
     private currentScreen: BaseScreen | null = null;
     private currentScreenId: string | null = null
-    private fps: number = 10;
+    private fps: number = 30;
     private commands = {
         "exit": "\x03", // ctrl - c
         "switchToMain" : "\x14", // ctrl - t
@@ -45,8 +47,29 @@ export class SM {
 
         this.eventHandler.on(
             "displayResult", (data)=>{
-                (this.screensList[2].screen as ResultScreen).setResultData(data)
+                (this.screensList[2].screen as ResultScreen)?.setResultData(data)
                 this.switchScreen("result")
+            }
+        )
+
+        this.eventHandler.on(
+            "closeAppOnError", (errorMessage: string)=>{
+                if(this.intervalRunning){
+                    clearInterval(this.intervalRunning)
+                    this.intervalRunning = null
+                    clearScreen()
+                    process.stdout.cursorTo(0,0)
+                    console.log(
+                        `
+                            ${chalky.style("App closed due to error.", [ANSI_CODES.red])}\n
+
+                            ${chalky.style("Error:", [ANSI_CODES.bgRed, ANSI_CODES.white])}\n
+
+                            ${errorMessage}
+                        `
+                    )
+                    process.exit(1)
+                }
             }
         )
     }

@@ -12,10 +12,10 @@ export const newTest = (params: any): string[]=>{
         process.exit(10)
     }
     const json : {words: string[]}= JSON.parse(file)
-    for(let i = 0; i<wordsLength; i++){
+    for(let i = 0; (i<Math.min(wordsLength, json.words.length)); i++){
         const randomIndex = Math.floor(Math.random()*json.words.length)
         listOfWords.push(
-            json.words[randomIndex]
+            params.onlyLowerCase ? (json.words[randomIndex]).toLowerCase(): json.words[randomIndex]
         )
     }
     return listOfWords
