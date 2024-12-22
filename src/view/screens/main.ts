@@ -179,16 +179,14 @@ export class MainScreen extends BaseScreen {
         for (i = 0; (i < userWord.length && i < testWord.length); i++) {
             uChar = userWord[i];
             tChar = testWord[i];
-            if (uChar == tChar) formattedWord += chalky.style(uChar, [ANSI_CODES.green]);
-            else formattedWord += chalky.style(tChar, [ANSI_CODES.red]);
+            if (uChar == tChar) formattedWord += chalky.green(uChar);
+            else formattedWord += chalky.red(tChar);
         }
         if (testWord.length > userWord.length) {
-            formattedWord += chalky.style(testWord.slice(i), [
-                (completed ? ANSI_CODES.yellow : ANSI_CODES.dim)
-                // if the word is completed (before currentword) then mark its incompleteness with red else with grey
-            ])
+            const remainingChars = testWord.slice(i)
+            formattedWord += (completed)? chalky.yellow(remainingChars): chalky.dim(remainingChars)
         } else if (userWord.length > testWord.length) {
-            formattedWord += chalky.style(userWord.slice(i), [ANSI_CODES.red, ANSI_CODES.underline])
+            formattedWord += chalky.red.underline(userWord.slice(i))
         }
 
         if(isCurrent){
@@ -294,15 +292,14 @@ export class MainScreen extends BaseScreen {
     }
     private updateTitle (){
         this.bh.updateBlock(Math.floor(this.bh.width/2) - 4, 0, -1,
-            "[" + chalky.style("T",[ANSI_CODES.green]) + chalky.style("yp", [ANSI_CODES.red, ANSI_CODES.underline]) + chalky.style("oTest", [ANSI_CODES.green]) + "]"
+            "[" + chalky.green("T") + chalky.red.underline("yp") + chalky.green("oTest") + "]"
         )
         if(!this.running || !this.startTime){
-            // this.bh.updateBlock(0,2, -1, chalky.style("Start Typing ....", [ANSI_CODES.yellow]))
-            this.bh.updateLine(2, chalky.style("Start Typing...", [ANSI_CODES.yellow, ANSI_CODES.italic]), true)
+            this.bh.updateLine(2, chalky.yellow.italic("Start Typing..."), true)
         }else{
-            const leftPart = `${this.getWPM()} wpm (${chalky.style(this.correctWordsCount,[ANSI_CODES.green])}/${chalky.style(this.errorWordsCount,[ANSI_CODES.red])})     ${this.getCPM()} cpm (${chalky.style(this.correctCharCount,[ANSI_CODES.green])}/${chalky.style(this.errorCharCount,[ANSI_CODES.red])}/${chalky.style(this.skippedCharCount, [ANSI_CODES.yellow])})`
+            const leftPart = `${this.getWPM()} wpm (${chalky.green(this.correctWordsCount)}/${chalky.red(this.errorWordsCount)})     ${this.getCPM()} cpm (${chalky.green(this.correctCharCount)}/${chalky.red(this.errorCharCount)}/${chalky.yellow(this.skippedCharCount)})`
 
-            const rightPart = `Time Remaining: ${chalky.style(Math.max(0, this.timeRemaining || 0 ) + "s", [ANSI_CODES.yellow])}`
+            const rightPart = `Time Remaining: ${chalky.yellow(Math.max(0, this.timeRemaining || 0 ) + "s")}`
 
             const gapping = this.bh.width - rightPart.length - chalky.parseAnsi(leftPart).normalTextLength
             this.bh.updateLine(
@@ -333,7 +330,7 @@ export class MainScreen extends BaseScreen {
     private updateBottomPanel(){
         this.bh.updateLine(
             this.bh.height - 4, 
-            `${chalky.style(" ctrl + c: exit ", [ANSI_CODES.bgYellow])}     ${chalky.style(" ctrl + s: settings ", [ANSI_CODES.bgWhite, ANSI_CODES.black])}      ${chalky.style(" ctrl + r: restart ", [ANSI_CODES.bgCyan])}  `,
+            `${chalky.bgYellow(" ctrl + c: exit ")}     ${chalky.bgWhite.black(" ctrl + s: settings ")}      ${chalky.bgCyan(" ctrl + r: restart ")}  `,
             true
         )
         this.bh.updateLine(
