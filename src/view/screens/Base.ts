@@ -1,6 +1,6 @@
 import { BufferHandler } from "../../utils/bufferHandler";
 import EventBus from "../../utils/eventBus";
-import { clearScreen } from "../../utils/io";
+import { clearEntireTerminal, clearVisibleScreen } from "../../utils/io";
 
 // parent class for all screens
 export class BaseScreen {
@@ -24,7 +24,7 @@ export class BaseScreen {
     render(cleanRender: boolean = false){
         if(cleanRender){
             this.bh.forceDirtyAll()
-            clearScreen()
+            clearEntireTerminal()
         }
         process.stdout.cursorTo(0,0)
         process.stdout.write(this.bh.updateBuffer());

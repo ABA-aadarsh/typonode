@@ -6,15 +6,12 @@
 import ANSI_CODES from "../../utils/ansiCodes";
 import chalky from "../../utils/Chalky";
 import EventBus from "../../utils/eventBus";
-import { terminalDimension, writeOnScreen } from "../../utils/io";
-import { newTest } from "../../utils/testGenerate";
+import { _keys, terminalDimension, writeOnScreen } from "../../utils/io";
+import { newTest, testParamsConstraints, testParamsType } from "../../utils/testGenerate";
 import { BaseScreen } from "./Base";
 export class MainScreen extends BaseScreen {
     private testText: string[];
-    private testParams: {
-        timeLimit: number,
-        onlyLowerCase: boolean
-    }
+    private testParams: testParamsType
     private correctWordsCount : number = 0;
     private errorWordsCount: number = 0
     
@@ -23,7 +20,7 @@ export class MainScreen extends BaseScreen {
     private skippedCharCount: number = 0
 
     private startTime : number | null = null
-    private timeRemaining: number | null = null
+    private timeRemaining: number | null = null // ms
     running: boolean // indicates whether the speed test has started or not
     private userTypedWords: string[] // words users typed (no fromatting)
     private formattedUserWords: {formattedWord: string, letterCount: number}[] // formatted user typed words  shown in the screen
@@ -32,11 +29,6 @@ export class MainScreen extends BaseScreen {
     private currentCharIndex: number
     //  currentCharIndex is always equal to currentWord.length, it is to point the next char to be typed in testText[currentWordIndex] if it is not beyond the limit
     private currentWord: string
-
-
-    private commands = {
-        "restart": "\x12"
-    }
     constructor(
         {eventHandler}: {
             eventHandler: EventBus
@@ -51,15 +43,17 @@ export class MainScreen extends BaseScreen {
         this.formattedUserWords = []
 
         // TODO: test params should be saved for future use
+        this.testText = this.generateTest();
+        // default value 
         this.testParams = {
-            timeLimit : 30, // in seconds,
-            onlyLowerCase: false
+            timeLimit: testParamsConstraints.timeLimit.default,
+            allowPunctuation: testParamsConstraints.allowPunctuation.default,
+            allowUppercase: testParamsConstraints.allowPunctuation.default,
+            type: testParamsConstraints.type.default
         }
 
-        this.testText = this.generateTest();
-
         this.eventHandler.on(
-            "settingsUpdated", (data: typeof this.testParams)=>{
+            "settingsUpdated", (data: testParamsType)=>{
                 this.testParams = {...data}
                 // create new test
                 this.refresh();
@@ -85,7 +79,7 @@ export class MainScreen extends BaseScreen {
     public start() {
         this.resetVariables()
         this.startTime = new Date().getTime()
-        this.timeRemaining = this.testParams.timeLimit
+        this.timeRemaining = this.testParams?.timeLimit || testParamsConstraints.timeLimit.default
         this.running = true
     }
 
@@ -95,16 +89,12 @@ export class MainScreen extends BaseScreen {
 
     private generateTest() {
         // fetch settings from settings screen
-        return newTest(
-            {
-                onlyLowerCase: this.testParams.onlyLowerCase
-            }
-        )
+        return newTest(this.testParams)
     }
     public keyHandle(k: string): void {
         // commands handle
         switch(k){
-            case this.commands.restart: 
+            case _keys.ctrl_r: 
                 this.refresh();
                 return;
             default: 
@@ -113,12 +103,11 @@ export class MainScreen extends BaseScreen {
 
         // normal char handle
         if(this.currentWordIndex >= this.testText.length){
-            this.refresh()
             return
         }
-        if (k == '\t' || k == '\b' || k == '\r' || k == ' ') {
+        if (k == _keys.tab || (k == _keys.backspace || k==_keys.backspaceLinux) || k == _keys.enter || k == _keys.space) {
             if (this.currentWord == "") return;
-            else if(k=='\b'){
+            else if(k==_keys.backspace || k==_keys.backspaceLinux){
                 const lastChar = this.currentWord[this.currentCharIndex - 1]
                 if(this.currentCharIndex >= this.testText[this.currentWordIndex].length){
                     this.errorCharCount -= 1
@@ -274,7 +263,6 @@ export class MainScreen extends BaseScreen {
         }
         this.eventHandler.emit("displayResult", resultData)
         this.stop();
-        this.refresh();
     }
 
     private getWPM ():number{
@@ -299,8 +287,8 @@ export class MainScreen extends BaseScreen {
         }else{
             const leftPart = `${this.getWPM()} wpm (${chalky.green(this.correctWordsCount)}/${chalky.red(this.errorWordsCount)})     ${this.getCPM()} cpm (${chalky.green(this.correctCharCount)}/${chalky.red(this.errorCharCount)}/${chalky.yellow(this.skippedCharCount)})`
 
-            const rightPart = `Time Remaining: ${chalky.yellow(Math.max(0, this.timeRemaining || 0 ) + "s")}`
-
+            const t = String(Math.max(0, this.timeRemaining || 0))
+            const rightPart = `Time Remaining: ${chalky.yellow(t[0] + "s")}`
             const gapping = this.bh.width - rightPart.length - chalky.parseAnsi(leftPart).normalTextLength
             this.bh.updateLine(
                 2, 
@@ -325,7 +313,7 @@ export class MainScreen extends BaseScreen {
     }
     private updateTimeRemaining(){
         if(this.running && this.startTime)
-        this.timeRemaining = Math.round(this.testParams.timeLimit - (new Date().getTime()- this.startTime)/1000)
+        this.timeRemaining = (this.testParams.timeLimit*1000 - (new Date().getTime()- this.startTime)) 
     }
     private updateBottomPanel(){
         this.bh.updateLine(

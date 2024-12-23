@@ -4,16 +4,18 @@ import { homedir } from "os"
 import path from "path"
 import fs from "fs"
 
-interface storeDataType {
+export type  storeDataType = {
     "highestWPM": {
         "wpm": null|number,
         "date": null|Date
     },
     "settings":{
-        "timeLimit": number,
-        "onlyLowerCase": boolean,
-        "punctuationAllowed": boolean,
-        "wordsType": string
+        "testParams": {
+            "timeLimit": number,
+            "allowUppercase": boolean,
+            "allowPunctuation": boolean,
+            "type": string
+        }
     }
 }
 const storeFilePath = path.resolve(homedir(), ".config", "typonode","store.json")
@@ -35,10 +37,12 @@ export const createDefaultStore = ()=>{
                             "date": null
                         },
                         "settings":{
-                            "timeLimit": 30,
-                            "onlyLowerCase": false,
-                            "punctuationAllowed": true,
-                            "wordsType": "common"
+                            "testParams": {
+                                "timeLimit": 30,
+                                "allowUppercase": false,
+                                "allowPunctuation": false,
+                                "type": "common"
+                            }
                         }
                     }
                 ), "utf-8"
@@ -68,5 +72,18 @@ export const updateStoreData = (
 ):void =>{
     if(checkStore()){
         fs.writeFileSync(storeFilePath, JSON.stringify(data), "utf-8")
+    }
+}
+
+export const updateTestParamsInStore = (
+    newTestParams: storeDataType["settings"]["testParams"]
+):boolean=>{
+    const storeData: storeDataType | undefined = getStoreData()
+    if(storeData){
+        storeData.settings.testParams = {...newTestParams}
+        fs.writeFileSync(storeFilePath, JSON.stringify(storeData), "utf-8")
+        return true
+    }else{
+        return false
     }
 }

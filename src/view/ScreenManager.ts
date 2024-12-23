@@ -4,7 +4,7 @@ import process from "node:process";
 import { BaseScreen } from "./screens/Base";
 import { MainScreen } from "./screens/main";
 import { SettingScreen } from "./screens/settings";
-import { clearScreen, disableCursor, enableCursor } from "../utils/io";
+import { _keys, clearEntireTerminal, clearVisibleScreen, disableCursor, enableCursor } from "../utils/io";
 import { setInterval } from "node:timers";
 import EventBus from "../utils/eventBus";
 import { ResultScreen } from "./screens/result";
@@ -28,13 +28,9 @@ export class SM {
     private currentScreen: BaseScreen | null = null;
     private currentScreenId: string | null = null
     private fps: number = 30;
-    private commands = {
-        "exit": "\x03", // ctrl - c
-        "switchToMain" : "\x14", // ctrl - t
-        "switchToSettings" : "\x13", // ctrl - s
-    }
     private justSwitched : boolean // justSwitched is set when the switching occurs and after the render it is unset. on justswitched = true, the screen.render will clear entire screen and render
     constructor(){
+        process.stdout.write("\x1b[3J\x1b[2J\x1b[H"); // clear scrollback buffer + clear visible screen and
         this.screensList = [
             {id: "main", screen:  new MainScreen({eventHandler: this.eventHandler})},
             {id: "setting", screen: new SettingScreen({eventHandler: this.eventHandler})},
@@ -57,7 +53,7 @@ export class SM {
                 if(this.intervalRunning){
                     clearInterval(this.intervalRunning)
                     this.intervalRunning = null
-                    clearScreen()
+                    clearVisibleScreen()
                     process.stdout.cursorTo(0,0)
                     console.log(
                         `
@@ -75,15 +71,15 @@ export class SM {
     }
     keyHandle(k: string){
         switch(k){
-            case this.commands.exit: 
+            case _keys.ctrl_c: 
                 enableCursor();
-                clearScreen()
+                clearVisibleScreen()
                 if(this.intervalRunning) clearInterval(this.intervalRunning);
                 process.exit();
-            case this.commands.switchToMain: 
+            case _keys.ctrl_t: 
                 this.switchScreen("main")
                 break
-            case this.commands.switchToSettings:
+            case _keys.ctrl_s:
                 this.switchScreen("setting")
                 break
             default:
@@ -97,6 +93,7 @@ export class SM {
                 this.currentScreenId = newScreenId
                 this.currentScreen = this.screensList[nsIndex].screen;
                 this.justSwitched = true
+                clearEntireTerminal()
             }
         }
     }
