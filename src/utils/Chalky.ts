@@ -110,6 +110,7 @@ class Chalky extends ChalkyMainUtility {
     this.proxy = new Proxy(this.applyStyles.bind(this), {
       get: (target, prop: string) => {
         if (prop in ANSI_CODES) {
+          this.stylesList.add(ANSI_CODES[prop])
           return this.proxy; // Return proxy for chaining
         }
         return Reflect.get(target, prop); // Default behavior

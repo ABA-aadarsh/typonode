@@ -5,7 +5,7 @@ import chalky from "../../utils/Chalky";
 import EventBus from "../../utils/eventBus";
 import { _keys, terminalDimension, writeOnScreen } from "../../utils/io";
 import { checkStore, createDefaultStore, getStoreData, updateTestParamsInStore } from "../../utils/store";
-import { testParamsConstraints, testParamsConstraintsType } from "../../utils/testGenerate";
+import { testParamsConstraints, testParamsConstraintsType } from "../../utils/typingtestgeneration";
 import { BaseScreen } from "./Base";
 
 type testParams = {
@@ -118,22 +118,27 @@ export class SettingScreen extends BaseScreen {
     }
     private settingParamHeader(h: string, i: number): string {
         if (i == this.currentSettingParamIndex) {
-            return "[" + h + "]"
+            return chalky.bgCyan(" ") + " " + h
         }
-        return h
+        return "  " + h
     }
-
-
-
     getSettingsData(): testParams {
         return { ...this.savedTestParams }
     }
     updateTitle(): void {
-        this.bh.updateLine(0, "Typonode - Settings ")
-        this.bh.updateBlock(terminalDimension.width - 10, 0, 8, this.isSettingsUnsaved ? chalky.red("*") + chalky.yellow("Unsaved") : "")
+        const title = "Typonode - Settings"
+        const unsavedMessage = chalky.red("*") + chalky.yellow("Unsaved Settings (ctrl+o to save)")
+        this.bh.updateBlock(
+            Math.max(0, Math.floor((this.bh.width / 2) - 19 / 2)), 0, 19, title
+        )
+        
+        this.bh.updateBlock(
+            Math.floor(terminalDimension.width - chalky.stripAnsi(unsavedMessage).length), 1,
+            -1, this.isSettingsUnsaved?  unsavedMessage: " ".repeat(chalky.stripAnsi(unsavedMessage).length)
+        )
     }
     updateMenu(): void {
-        this.bh.updateBlock(0, 2, -1, "Options")
+        this.bh.updateBlock(0, 2, -1, chalky.bgYellow(" ") + " Options")
         this.bh.updateLine(4,
             `${this.settingParamHeader("Time Limit", 0)} : ${this.bufferTestParams.timeLimit}`, true
         )
@@ -146,6 +151,9 @@ export class SettingScreen extends BaseScreen {
         this.bh.updateLine(7,
             `${this.settingParamHeader("Test Type: ", 3)}: ${this.bufferTestParams.type}   `, true
         )
+    }
+    updateBottomPanel(): void {
+
     }
     update(): void {
         this.updateTitle()

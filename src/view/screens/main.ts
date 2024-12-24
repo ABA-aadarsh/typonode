@@ -6,8 +6,9 @@
 import ANSI_CODES from "../../utils/ansiCodes";
 import chalky from "../../utils/Chalky";
 import EventBus from "../../utils/eventBus";
+import { getTimeFormatFromMilliseconds } from "../../utils/helperFunctions";
 import { _keys, terminalDimension, writeOnScreen } from "../../utils/io";
-import { newTest, testParamsConstraints, testParamsType } from "../../utils/testGenerate";
+import { newTest, testParamsConstraints, testParamsType } from "../../utils/typingtestgeneration";
 import { BaseScreen } from "./Base";
 export class MainScreen extends BaseScreen {
     private testText: string[];
@@ -41,17 +42,14 @@ export class MainScreen extends BaseScreen {
         this.currentCharIndex = 0
         this.currentWord = ""
         this.formattedUserWords = []
-
-        // TODO: test params should be saved for future use
-        this.testText = this.generateTest();
         // default value 
         this.testParams = {
             timeLimit: testParamsConstraints.timeLimit.default,
             allowPunctuation: testParamsConstraints.allowPunctuation.default,
             allowUppercase: testParamsConstraints.allowPunctuation.default,
             type: testParamsConstraints.type.default
-        }
-
+        }        
+        this.testText = this.generateTest();
         this.eventHandler.on(
             "settingsUpdated", (data: testParamsType)=>{
                 this.testParams = {...data}
@@ -287,8 +285,8 @@ export class MainScreen extends BaseScreen {
         }else{
             const leftPart = `${this.getWPM()} wpm (${chalky.green(this.correctWordsCount)}/${chalky.red(this.errorWordsCount)})     ${this.getCPM()} cpm (${chalky.green(this.correctCharCount)}/${chalky.red(this.errorCharCount)}/${chalky.yellow(this.skippedCharCount)})`
 
-            const t = String(Math.max(0, this.timeRemaining || 0))
-            const rightPart = `Time Remaining: ${chalky.yellow(t[0] + "s")}`
+            let t = getTimeFormatFromMilliseconds(this.timeRemaining || 0)
+            const rightPart = `Time Remaining: ${chalky.yellow(t + "s")}`
             const gapping = this.bh.width - rightPart.length - chalky.parseAnsi(leftPart).normalTextLength
             this.bh.updateLine(
                 2, 
@@ -312,13 +310,14 @@ export class MainScreen extends BaseScreen {
         )
     }
     private updateTimeRemaining(){
-        if(this.running && this.startTime)
-        this.timeRemaining = (this.testParams.timeLimit*1000 - (new Date().getTime()- this.startTime)) 
+        if(this.running && this.startTime){
+            this.timeRemaining = (this.testParams.timeLimit*1000 - (new Date().getTime()- this.startTime)) 
+        }
     }
     private updateBottomPanel(){
         this.bh.updateLine(
             this.bh.height - 4, 
-            `${chalky.bgYellow(" ctrl + c: exit ")}     ${chalky.bgWhite.black(" ctrl + s: settings ")}      ${chalky.bgCyan(" ctrl + r: restart ")}  `,
+            `${chalky.bgYellow(" ctrl + c: exit ")}     ${chalky.black.bgWhite(" ctrl + s: settings ")}      ${chalky.bgCyan(" ctrl + r: restart ")}  `,
             true
         )
         this.bh.updateLine(

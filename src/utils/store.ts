@@ -3,6 +3,7 @@
 import { homedir } from "os"
 import path from "path"
 import fs from "fs"
+import { testParamsConstraintsType } from "./typingtestgeneration"
 
 export type  storeDataType = {
     "highestWPM": {
@@ -56,8 +57,6 @@ export const createDefaultStore = ()=>{
         }
     }
 }
-
-
 
 export const getStoreData = (): storeDataType | undefined=>{
     if(checkStore()){
