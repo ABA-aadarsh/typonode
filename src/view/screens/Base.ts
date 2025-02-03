@@ -29,7 +29,7 @@ export class BaseScreen {
         process.stdout.cursorTo(0,0)
         process.stdout.write(this.bh.updateBuffer());
     }
-    update(){}
+    update(fps?:number){}
     keyHandle(k: string){}
     refresh(){}
 }

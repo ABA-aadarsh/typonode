@@ -27,8 +27,9 @@ export class SM {
     private intervalRunning : null | NodeJS.Timeout
     private currentScreen: BaseScreen | null = null;
     private currentScreenId: string | null = null
-    private fps: number = 30;
+    private fps: number = 0;
     private justSwitched : boolean // justSwitched is set when the switching occurs and after the render it is unset. on justswitched = true, the screen.render will clear entire screen and render
+    
     constructor(){
         process.stdout.write("\x1b[3J\x1b[2J\x1b[H"); // clear scrollback buffer + clear visible screen and
         this.screensList = [
@@ -97,10 +98,13 @@ export class SM {
             }
         }
     }
+    setFPS (fps:number){
+        this.fps = fps
+    }
     update(){
         if(this.currentScreen){
             if(this.justSwitched) this.currentScreen.refresh()
-            this.currentScreen.update();
+            this.currentScreen.update(this.fps);
         }
     }
     render(){
@@ -108,16 +112,5 @@ export class SM {
             this.currentScreen.render(this.justSwitched); // do clean rendering is just switched
             if(this.justSwitched) this.justSwitched = false;
         }
-    }
-
-    intiateAnimation (){
-        // manages the interval system for rendering and updation
-        if(this.intervalRunning!=null){
-            clearInterval(this.intervalRunning)
-        }
-        this.intervalRunning = setInterval(() => {
-            this.update()
-            this.render()
-        }, 1000/this.fps); //TODO: different screen may have different interval
     }
 }

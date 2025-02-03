@@ -113,7 +113,6 @@ export class MainScreen extends BaseScreen {
                     if(lastChar == this.testText[this.currentWordIndex][this.currentCharIndex - 1]) this.correctCharCount -= 1
                     else this.errorCharCount -= 1
                 }
-
                 this.currentWord = this.currentWord.slice(0, this.currentWord.length-1)
                 this.currentCharIndex -= 1
             }
@@ -232,6 +231,16 @@ export class MainScreen extends BaseScreen {
         return lines
     }
     private showTestResult(){
+        if(this.currentWord!="" && this.currentWordIndex<this.testText.length){
+            this.userTypedWords.push(this.currentWord)
+            const formattedWord = this.formatWord(this.currentWord, this.testText[this.currentWordIndex], true)
+            this.formattedUserWords.push(formattedWord)
+            if(this.currentWord == this.testText[this.currentWordIndex]) this.correctWordsCount++
+            else{
+                this.skippedCharCount += Math.max(0, this.testText[this.currentWordIndex].length - this.currentWord.length)
+                this.errorWordsCount += 1
+            }
+        }
         const resultData : {wpm: number, cpm: number,
             charactersInfo: {
                 correct: number,
@@ -276,10 +285,11 @@ export class MainScreen extends BaseScreen {
         }
         return -1
     }
-    private updateTitle (){
+    private updateTitle (fps:number){
         this.bh.updateBlock(Math.floor(this.bh.width/2) - 4, 0, -1,
-            "[" + chalky.green("T") + chalky.red.underline("yp") + chalky.green("oTest") + "]"
+            "[" + chalky.green("T") + chalky.red.underline("yp") + chalky.green("oNode") + "]"
         )
+        this.bh.updateLine(1, `FPS: ${fps}`,true)
         if(!this.running || !this.startTime){
             this.bh.updateLine(2, chalky.yellow.italic("Start Typing..."), true)
         }else{
@@ -325,12 +335,12 @@ export class MainScreen extends BaseScreen {
             "Highest WPM Record: 50"
         )
     }
-    public update(): void {
+    public update(fps:number): void {
         this.updateTimeRemaining();
         if(this.running && this.timeRemaining && this.timeRemaining<=0){
             this.showTestResult();
         }
-        this.updateTitle();
+        this.updateTitle(fps);
         this.updateTestSection();
         this.updateCurrentWordSection();
         this.updateBottomPanel();

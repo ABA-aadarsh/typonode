@@ -108,6 +108,10 @@ export class ResultScreen extends BaseScreen{
                     startY + i, lines[i], false
                 )
             }
+        }else{
+            this.bh.updateLine(
+                3, chalky.italic("Data not available. Something fishy."), true
+            )
         }
     }
     updateBottomPanel(){
