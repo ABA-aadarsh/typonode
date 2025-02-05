@@ -3,23 +3,20 @@ import chalky from "./Chalky"
 import { terminalDimension } from "./io"
 
 export class BufferHandler {
-    readonly width: number
-    readonly height: number
+    public width: number
+    public height: number
     private cells: {
         value: string,
         x: number,
         y: number,
         dirty: boolean
     }[][]
-    constructor(
-        width: number,
-        height: number
-    ){
-        this.width = width
-        this.height = height
-        this.cells = Array.from(Array(height), ()=>new Array(width))
-        for(let y = 0; y<height; y++){
-            for(let x=0; x<width; x++){
+    constructor(){
+        this.width = terminalDimension.width
+        this.height = terminalDimension.height
+        this.cells = Array.from(Array(this.height), ()=>new Array(this.width))
+        for(let y = 0; y<this.height; y++){
+            for(let x=0; x<this.width; x++){
                 this.cells[y][x] = {
                     value: " ",
                     x: x,
@@ -38,6 +35,7 @@ export class BufferHandler {
         }
     }
     public updateLine (y:number, ansiString: string, clearAfter: boolean = false){
+        if(y>this.height) return;
         let parsedResult = chalky.parseAnsi(ansiString)
         const parsed = parsedResult.parsed
         
@@ -122,6 +120,21 @@ export class BufferHandler {
         }
     }
 
+    public resize(){
+        this.width = terminalDimension.width
+        this.height = terminalDimension.height
+        this.cells = Array.from(Array(this.height), ()=>new Array(this.width))
+        for(let y = 0; y<this.height; y++){
+            for(let x=0; x<this.width; x++){
+                this.cells[y][x] = {
+                    value: " ",
+                    x: x,
+                    y: y,
+                    dirty: false
+                } 
+            }
+        }
+    }
     // public checkWithString(compareString: string, yStart: number){
     //     for(let i = 0; i<compareString.length; i++){
     //         const y = Math.floor(i/this.width)

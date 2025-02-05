@@ -5,7 +5,6 @@ import { BaseScreen } from "./screens/Base";
 import { MainScreen } from "./screens/main";
 import { SettingScreen } from "./screens/settings";
 import { _keys, clearEntireTerminal, clearVisibleScreen, disableCursor, enableCursor } from "../utils/io";
-import { setInterval } from "node:timers";
 import EventBus from "../utils/eventBus";
 import { ResultScreen } from "./screens/result";
 import chalky from "../utils/Chalky";
@@ -21,6 +20,8 @@ process.stdin.resume()
 
 // SM - ScreenManager
 export class SM {
+    private bufferFrameUpdateDelay = 15; // to prevent the display of fps too rapidly
+    private bufferFrame = 0;
     private eventHandler = new EventBus();
 
     private screensList : {id: string, screen: BaseScreen}[] = [];
@@ -87,6 +88,16 @@ export class SM {
                 this.currentScreen?.keyHandle(k)
         }
     }
+    handleScreenResize(){
+        // width = no of columns . height = no of rows , available in terminalDimension
+        clearEntireTerminal()
+        this.currentScreen?.resizeScreen()
+        this.screensList.forEach(screenData=>{
+            if(this.currentScreenId!=screenData.id){
+                screenData.screen.resizeScreen()
+            }
+        })
+    }
     private switchScreen(newScreenId: string){
         if(this.currentScreenId != newScreenId){
             const nsIndex = this.screensList.findIndex(x=>x.id==newScreenId)
@@ -99,7 +110,10 @@ export class SM {
         }
     }
     setFPS (fps:number){
-        this.fps = fps
+        if(this.bufferFrame==0){
+            this.fps = fps
+        }
+        this.bufferFrame=(this.bufferFrame+1)%this.bufferFrameUpdateDelay
     }
     update(){
         if(this.currentScreen){
@@ -109,7 +123,7 @@ export class SM {
     }
     render(){
         if(this.currentScreen){
-            this.currentScreen.render(this.justSwitched); // do clean rendering is just switched
+            this.currentScreen.render(this.justSwitched); // do clean rendering if just switched
             if(this.justSwitched) this.justSwitched = false;
         }
     }

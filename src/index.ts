@@ -1,4 +1,4 @@
-import { clearEntireTerminal } from "./utils/io";
+import { clearEntireTerminal, terminalDimension } from "./utils/io";
 import { SM } from "./view/ScreenManager";
 import process from "node:process"
 
@@ -7,6 +7,11 @@ process.stdin.on("data", (buffer: Buffer)=>{
     const key = String(buffer)
     sm.keyHandle(key)
 })
+process.stdout.on('resize', () => {
+    terminalDimension.width = process.stdout.columns
+    terminalDimension.height = process.stdout.rows
+    sm.handleScreenResize()
+});
 // initial screen clearing
 clearEntireTerminal()
 let previousLoopTime: number | null = null
@@ -19,13 +24,13 @@ const loop = ()=>{
     if(previousLoopTime!=null){
         const delta = newTime - previousLoopTime
         const fps = 1000/delta
-        if(fps<100){
+        if(delta > 10){
             fpsBufferPointer = (fpsBufferPointer + 1)%fpsBufferSize
             fpsBufferArray[fpsBufferPointer]=fps
             let fpsSum: number = 0;
             for(let i =0; i<fpsBufferPointer; i++) fpsSum += fpsBufferArray[i];
             sm.setFPS(
-                Math.floor(fpsSum/(fpsBufferPointer+1))
+                Math.floor(fps)
             )
             sm.update()
             sm.render()
@@ -34,6 +39,6 @@ const loop = ()=>{
     }else{
         previousLoopTime = newTime
     }
-    setTimeout(loop, 10)
+    setTimeout(loop)
 }
 loop()

@@ -4,21 +4,16 @@ import { clearEntireTerminal, clearVisibleScreen } from "../../utils/io";
 
 // parent class for all screens
 export class BaseScreen {
-    private readonly refreshStyle : "on-demand" | "interval"
     protected eventHandler : EventBus;
     protected bh: BufferHandler;
-    private readonly fps: number;
+    private  fps: number;
     constructor(
         {
-            refreshStyle,
-            fps,
-            dimension,
             eventHandler
-        }: {refreshStyle: "on-demand" | "interval", fps?: number, dimension: {width: number, height: number}, eventHandler: EventBus}
+        }: {eventHandler: EventBus}
     ){
-        this.refreshStyle = refreshStyle
-        this.fps = fps || 10 // 10 being the default fps
-        this.bh = new BufferHandler(dimension.width, dimension.height)
+        this.fps = 0
+        this.bh = new BufferHandler()
         this.eventHandler = eventHandler
     }
     render(cleanRender: boolean = false){
@@ -28,6 +23,9 @@ export class BaseScreen {
         }
         process.stdout.cursorTo(0,0)
         process.stdout.write(this.bh.updateBuffer());
+    }
+    resizeScreen(){
+        this.bh.resize()
     }
     update(fps?:number){}
     keyHandle(k: string){}

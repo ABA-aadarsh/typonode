@@ -24,7 +24,7 @@ export class ResultScreen extends BaseScreen{
             eventHandler: EventBus
         }
     ){
-        super({refreshStyle: "on-demand", fps: 10, dimension: {width: terminalDimension.width,  height: terminalDimension.height}, eventHandler: eventHandler})
+        super({eventHandler: eventHandler})
     }
 
     keyHandle(k: string): void {

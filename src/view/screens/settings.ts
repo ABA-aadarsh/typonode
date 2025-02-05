@@ -26,7 +26,7 @@ export class SettingScreen extends BaseScreen {
             eventHandler: EventBus
         }
     ) {
-        super({ refreshStyle: "on-demand", fps: 10, dimension: { width: terminalDimension.width, height: terminalDimension.height }, eventHandler: eventHandler })
+        super({ eventHandler: eventHandler })
 
         if (!checkStore()) {
             try {
@@ -128,17 +128,17 @@ export class SettingScreen extends BaseScreen {
     updateTitle(): void {
         const title = "Typonode - Settings"
         const unsavedMessage = chalky.red("*") + chalky.yellow("Unsaved Settings (ctrl+o to save)")
-        this.bh.updateBlock(
-            Math.max(0, Math.floor((this.bh.width / 2) - 19 / 2)), 0, 19, title
-        )
+        // this.bh.updateBlock(
+        //     Math.max(0, Math.floor((this.bh.width / 2) - 19 / 2)), 0, 19, title
+        // )
         
-        this.bh.updateBlock(
-            Math.floor(terminalDimension.width - chalky.stripAnsi(unsavedMessage).length), 1,
-            -1, this.isSettingsUnsaved?  unsavedMessage: " ".repeat(chalky.stripAnsi(unsavedMessage).length)
-        )
+        // this.bh.updateBlock(
+        //     Math.floor(terminalDimension.width - chalky.stripAnsi(unsavedMessage).length), 1,
+        //     -1, this.isSettingsUnsaved?  unsavedMessage: " ".repeat(chalky.stripAnsi(unsavedMessage).length)
+        // )
     }
     updateMenu(): void {
-        this.bh.updateBlock(0, 2, -1, chalky.bgYellow(" ") + " Options")
+        // this.bh.updateBlock(0, 2, -1, chalky.bgYellow(" ") + " Options")
         this.bh.updateLine(4,
             `${this.settingParamHeader("Time Limit", 0)} : ${this.bufferTestParams.timeLimit}`, true
         )
@@ -155,7 +155,7 @@ export class SettingScreen extends BaseScreen {
     updateBottomPanel(): void {
 
     }
-    update(): void {
+    update(fps?:number): void {
         this.updateTitle()
         this.updateMenu()
     }

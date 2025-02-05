@@ -35,7 +35,7 @@ export class MainScreen extends BaseScreen {
             eventHandler: EventBus
         }
     ) {
-        super({ refreshStyle: "interval", fps: 30 , dimension: {width: terminalDimension.width, height: terminalDimension.height}, eventHandler: eventHandler})
+        super({eventHandler: eventHandler})
         this.running = false; // TODO: the changing of this.running mechanism implementation
         this.userTypedWords = []
         this.currentWordIndex = 0
