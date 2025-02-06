@@ -11,6 +11,7 @@ export class BufferHandler {
         y: number,
         dirty: boolean
     }[][]
+    private clearedLine : {[index:number]:boolean} = {}
     constructor(){
         this.width = terminalDimension.width
         this.height = terminalDimension.height
@@ -28,14 +29,20 @@ export class BufferHandler {
     }
 
     public updateCell(x:number, y:number, value: string){
-        if(x>this.width || y>this.height) return;
-        if(this.cells[y][x].value!=value){
-            this.cells[y][x].value = value
-            this.cells[y][x].dirty = true
+        try {
+            if(x>=this.width || y>=this.height) return;
+            if(this.cells[y][x].value!=value){
+                this.cells[y][x].value = value
+                this.cells[y][x].dirty = true
+            }
+        } catch (error) {
+            console.log(error)
+            process.exit(1)
         }
     }
     public updateLine (y:number, ansiString: string, clearAfter: boolean = false){
-        if(y>this.height) return;
+        if(y>=this.height) return;
+        this.clearedLine[y]=false
         let parsedResult = chalky.parseAnsi(ansiString)
         const parsed = parsedResult.parsed
         
@@ -60,7 +67,8 @@ export class BufferHandler {
     }
 
     public updateBlock (x:number, y:number, w: number, ansiString: string): void {
-        if(x>this.width) return; // x can't be greater than width of the screen
+        this.clearedLine[y]=false
+        if(x>=this.width) return; // x can't be greater than width of the screen
         const parsedResult = chalky.parseAnsi(ansiString)
         const parsed = parsedResult.parsed
         const max = Math.min((w!=-1) ? w : parsedResult.normalTextLength, this.width - x)
@@ -118,6 +126,13 @@ export class BufferHandler {
         for(let i=0; i<w; i++){
             this.updateCell(x+i, y, " ")
         }
+    }
+    public clearLine(y:number){
+        if(this.clearedLine[y]==true) return;
+        for(let i=0; i<this.width; i++){
+            this.updateCell(i,y," ")
+        }
+        this.clearedLine[y]=true
     }
 
     public resize(){

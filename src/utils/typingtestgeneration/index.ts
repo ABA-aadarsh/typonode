@@ -42,7 +42,7 @@ export const testParamsConstraints = {
         default: 30
     },
     "type": {
-        options: ["common", "shakespear", "piglatin", "cats", "random"],
+        options: ["common", "piglatin"],
         default: "common"
     },
     "allowUppercase": {
@@ -50,6 +50,9 @@ export const testParamsConstraints = {
     },
     "allowPunctuation": {
         default: false
+    },
+    "showFPS": {
+        default: true
     }
 }
 

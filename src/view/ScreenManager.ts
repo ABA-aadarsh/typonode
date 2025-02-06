@@ -20,15 +20,11 @@ process.stdin.resume()
 
 // SM - ScreenManager
 export class SM {
-    private bufferFrameUpdateDelay = 15; // to prevent the display of fps too rapidly
-    private bufferFrame = 0;
     private eventHandler = new EventBus();
-
     private screensList : {id: string, screen: BaseScreen}[] = [];
     private intervalRunning : null | NodeJS.Timeout
     private currentScreen: BaseScreen | null = null;
     private currentScreenId: string | null = null
-    private fps: number = 0;
     private justSwitched : boolean // justSwitched is set when the switching occurs and after the render it is unset. on justswitched = true, the screen.render will clear entire screen and render
     
     constructor(){
@@ -106,19 +102,17 @@ export class SM {
                 this.currentScreen = this.screensList[nsIndex].screen;
                 this.justSwitched = true
                 clearEntireTerminal()
+                this.currentScreen.update()
             }
         }
     }
     setFPS (fps:number){
-        if(this.bufferFrame==0){
-            this.fps = fps
-        }
-        this.bufferFrame=(this.bufferFrame+1)%this.bufferFrameUpdateDelay
+        this.currentScreen?.setFPS(fps)
     }
     update(){
         if(this.currentScreen){
             if(this.justSwitched) this.currentScreen.refresh()
-            this.currentScreen.update(this.fps);
+            this.currentScreen.update();
         }
     }
     render(){

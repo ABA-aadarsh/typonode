@@ -3,8 +3,6 @@
 import { homedir } from "os"
 import path from "path"
 import fs from "fs"
-import { testParamsConstraintsType } from "./typingtestgeneration"
-
 export type  storeDataType = {
     "highestWPM": {
         "wpm": null|number,
@@ -15,8 +13,9 @@ export type  storeDataType = {
             "timeLimit": number,
             "allowUppercase": boolean,
             "allowPunctuation": boolean,
-            "type": string
-        }
+            "type": string,
+        },
+        "showFPS": boolean
     }
 }
 const storeFilePath = path.resolve(homedir(), ".config", "typonode","store.json")
@@ -43,7 +42,8 @@ export const createDefaultStore = ()=>{
                                 "allowUppercase": false,
                                 "allowPunctuation": false,
                                 "type": "common"
-                            }
+                            },
+                            "showFPS":false
                         }
                     }
                 ), "utf-8"

@@ -13,7 +13,7 @@ type testParams = {
     timeLimit: number,
     type: string,
     allowUppercase: boolean,
-    allowPunctuation: boolean
+    allowPunctuation: boolean,
 }
 
 export class SettingScreen extends BaseScreen {
@@ -81,6 +81,9 @@ export class SettingScreen extends BaseScreen {
                 if (ci < 0) ci += options.length
                 this.bufferTestParams.type = options[ci]
                 break
+            case 4:
+                // this.bufferTestParams.showFPS != this.bufferTestParams.showFPS
+                break
         }
         this.isSettingsUnsaved = true
     }
@@ -126,37 +129,54 @@ export class SettingScreen extends BaseScreen {
         return { ...this.savedTestParams }
     }
     updateTitle(): void {
-        const title = "Typonode - Settings"
         const unsavedMessage = chalky.red("*") + chalky.yellow("Unsaved Settings (ctrl+o to save)")
-        // this.bh.updateBlock(
-        //     Math.max(0, Math.floor((this.bh.width / 2) - 19 / 2)), 0, 19, title
-        // )
-        
-        // this.bh.updateBlock(
-        //     Math.floor(terminalDimension.width - chalky.stripAnsi(unsavedMessage).length), 1,
-        //     -1, this.isSettingsUnsaved?  unsavedMessage: " ".repeat(chalky.stripAnsi(unsavedMessage).length)
-        // )
+        this.bh.updateBlock(
+            Math.floor(terminalDimension.width - chalky.stripAnsi(unsavedMessage).length), 1,
+            -1, this.isSettingsUnsaved?  unsavedMessage: " ".repeat(chalky.stripAnsi(unsavedMessage).length)
+        )
     }
     updateMenu(): void {
-        // this.bh.updateBlock(0, 2, -1, chalky.bgYellow(" ") + " Options")
-        this.bh.updateLine(4,
+        this.bh.updateBlock(0, 3, -1, chalky.bgYellow(" ") + " Options")
+        this.bh.updateLine(5,
             `${this.settingParamHeader("Time Limit", 0)} : ${this.bufferTestParams.timeLimit}`, true
         )
-        this.bh.updateLine(5,
+        this.bh.updateLine(6,
             `${this.settingParamHeader("Allow Uppercase", 1)} : ${this.bufferTestParams.allowUppercase}`, true
         )
-        this.bh.updateLine(6,
+        this.bh.updateLine(7,
             `${this.settingParamHeader("Punctuation Allowed", 2)} : ${this.bufferTestParams.allowPunctuation}`, true
         )
-        this.bh.updateLine(7,
+        this.bh.updateLine(8,
             `${this.settingParamHeader("Test Type: ", 3)}: ${this.bufferTestParams.type}   `, true
         )
+        // this.bh.updateLine(9,
+        //     `${this.settingParamHeader("Show FPS: ", 4)}: ${this.bufferTestParams.showFPS}   `, true
+        // )
     }
     updateBottomPanel(): void {
-
+        this.bh.updateLine(
+            this.bh.height - 5, 
+            `${chalky.bgCyan(" ")} ${chalky.yellow("Arrow up/down to choose option")} `,
+            false
+        )
+        this.bh.updateLine(
+            this.bh.height - 4, 
+            `${chalky.bgCyan(" ")} ${chalky.yellow("Arrow Left/Right to toggle settings option")}`,
+            false
+        )
+        this.bh.updateLine(
+            this.bh.height - 2, 
+            `${chalky.bgYellow(" ctrl + c: exit ")}     ${chalky.black.bgWhite(" ctrl + s: settings ")}      ${chalky.bgCyan(" ctrl + r: restart ")}`,
+            true
+        )
     }
-    update(fps?:number): void {
+    update(): void {
+        if(this.partialFrameBuffer==0){
+            this.updateFPS()
+        }
         this.updateTitle()
         this.updateMenu()
+        this.updateBottomPanel()
+        this.incrementPartialFrameBuffer()
     }
 }

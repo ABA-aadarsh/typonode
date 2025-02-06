@@ -63,6 +63,7 @@ export class MainScreen extends BaseScreen {
         // reset the variables to their default value
         this.running = false
         this.correctCharCount = 0
+        this.currentCharIndex = 0
         this.skippedCharCount = 0
         this.errorCharCount = 0
         this.correctWordsCount = 0
@@ -72,6 +73,7 @@ export class MainScreen extends BaseScreen {
         this.userTypedWords = []
         this.formattedUserWords = []
         this.timeRemaining = null
+        this.partialFrameBuffer = 0
     }
 
     public start() {
@@ -176,7 +178,7 @@ export class MainScreen extends BaseScreen {
         }
 
         if(isCurrent){
-            formattedWord = "[" + formattedWord + "]"
+            formattedWord = "[" + formattedWord + "]" 
         }
         return {
             formattedWord: formattedWord,
@@ -196,8 +198,9 @@ export class MainScreen extends BaseScreen {
     private getFormattedDisplayTest(): string[] {
         // ansicoded text for the test
         const lines: string[] = []
-        let currentLine: string = ""
+        let currentLine: string = " "
         let charCount : number = 0
+        let paddingX : number = 2
         const maxCharLimit : number = this.bh.width
         for (let i = 0; i < this.testText.length; i++) {
             let formattedWord: string, letterCount: number
@@ -214,11 +217,11 @@ export class MainScreen extends BaseScreen {
                 letterCount = formatResult.letterCount
             }
 
-            if(charCount + letterCount + 2 > maxCharLimit){ // 2 to account for possibility of having [] on currentWord
+            if(charCount + letterCount + 2 + paddingX > maxCharLimit){ // 2 to account for possibility of having [] on currentWord
                 // in new line
                 lines.push(currentLine)
-                currentLine = formattedWord + " "
-                charCount = letterCount + 1
+                currentLine = " " + formattedWord + " "
+                charCount = letterCount + 2
             }else{
                 // same line
                 currentLine += formattedWord + " "
@@ -285,64 +288,68 @@ export class MainScreen extends BaseScreen {
         }
         return -1
     }
-    private updateTitle (fps:number){
-        this.bh.updateBlock(Math.floor(this.bh.width/2) - 4, 0, -1,
-            "[" + chalky.green("T") + chalky.red.underline("yp") + chalky.green("oNode") + "]"
-        )
-        this.bh.updateLine(1, `FPS: ${fps}`,true)
+    private updateInfoSection (){
         if(!this.running || !this.startTime){
-            this.bh.updateLine(2, chalky.yellow.italic("Start Typing..."), true)
+            this.bh.updateLine(2, chalky.yellow.italic(" Start Typing..."), true)
         }else{
-            const leftPart = `${this.getWPM()} wpm (${chalky.green(this.correctWordsCount)}/${chalky.red(this.errorWordsCount)})     ${this.getCPM()} cpm (${chalky.green(this.correctCharCount)}/${chalky.red(this.errorCharCount)}/${chalky.yellow(this.skippedCharCount)})`
-
-            let t = getTimeFormatFromMilliseconds(this.timeRemaining || 0)
-            const rightPart = `Time Remaining: ${chalky.yellow(t + "s")}`
-            const gapping = this.bh.width - rightPart.length - chalky.parseAnsi(leftPart).normalTextLength
+            const info = ` ${this.getWPM()} wpm (${chalky.green(this.correctWordsCount)}/${chalky.red(this.errorWordsCount)})     ${this.getCPM()} cpm (${chalky.green(this.correctCharCount)}/${chalky.red(this.errorCharCount)}/${chalky.yellow(this.skippedCharCount)})`
             this.bh.updateLine(
-                2, 
-                leftPart + " ".repeat(gapping) + rightPart,
-                true
+                2,info,true
             )
         }
     }
     private updateTestSection (){
         const ansiFormattedLines = this.getFormattedDisplayTest()
-        const startY: number = 5
-        for(let i = 0; i<ansiFormattedLines.length; i++){
+        const maxHeight: number = 5
+        const startY: number = 4
+        let i : number = 0
+        for(i; i<ansiFormattedLines.length && i<maxHeight; i++){
             this.bh.updateLine(
                 startY + i, ansiFormattedLines[i], true
             )
         }
+        for(i; i<maxHeight; i++){
+            this.bh.clearLine(startY + i)
+        }
     }
     private updateCurrentWordSection (){
+        this.bh.clearLine(this.bh.height - 5)
         this.bh.updateLine(
-            15, ": " + this.currentWord, true
+            this.bh.height -5, ` ${chalky.bgWhite(" ")} : ${this.currentWord}`, true
         )
     }
     private updateTimeRemaining(){
         if(this.running && this.startTime){
             this.timeRemaining = (this.testParams.timeLimit*1000 - (new Date().getTime()- this.startTime)) 
+            let t = getTimeFormatFromMilliseconds(this.timeRemaining || 0)
+            const timeInfo = `Time Remaining: ${chalky.yellow(t + "s")} `
+            this.bh.updateBlock(this.bh.width -  chalky.parseAnsi(timeInfo).normalTextLength, 2, -1, timeInfo)
         }
     }
     private updateBottomPanel(){
         this.bh.updateLine(
-            this.bh.height - 4, 
+            this.bh.height - 2, 
             `${chalky.bgYellow(" ctrl + c: exit ")}     ${chalky.black.bgWhite(" ctrl + s: settings ")}      ${chalky.bgCyan(" ctrl + r: restart ")}  `,
             true
         )
         this.bh.updateLine(
-            this.bh.height - 2,
+            this.bh.height - 1,
             "Highest WPM Record: 50"
         )
     }
-    public update(fps:number): void {
+    public update(): void {
+        if(this.partialFrameBuffer==0){
+            this.updateFPS()
+            this.updateInfoSection();
+        }
         this.updateTimeRemaining();
         if(this.running && this.timeRemaining && this.timeRemaining<=0){
             this.showTestResult();
+            return;
         }
-        this.updateTitle(fps);
         this.updateTestSection();
         this.updateCurrentWordSection();
         this.updateBottomPanel();
+        this.incrementPartialFrameBuffer()
     }
 }

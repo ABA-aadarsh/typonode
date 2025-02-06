@@ -1,9 +1,13 @@
 import { BufferHandler } from "../../utils/bufferHandler";
+import chalky from "../../utils/Chalky";
 import EventBus from "../../utils/eventBus";
 import { clearEntireTerminal, clearVisibleScreen } from "../../utils/io";
 
 // parent class for all screens
 export class BaseScreen {
+    // partialFrameBuffer delay system is used to prevent the rapid change display of recordings like fps, wpm etc
+    protected partialFrameBuffer : number = 0
+    protected readonly partialFrameBufferDelay: number = 5
     protected eventHandler : EventBus;
     protected bh: BufferHandler;
     private  fps: number;
@@ -20,6 +24,7 @@ export class BaseScreen {
         if(cleanRender){
             this.bh.forceDirtyAll()
             clearEntireTerminal()
+            this.partialFrameBuffer = 0
         }
         process.stdout.cursorTo(0,0)
         process.stdout.write(this.bh.updateBuffer());
@@ -27,7 +32,18 @@ export class BaseScreen {
     resizeScreen(){
         this.bh.resize()
     }
-    update(fps?:number){}
+    update(){}
     keyHandle(k: string){}
     refresh(){}
+    updateFPS(){
+        this.bh.clearLine(0)
+        const fpsText = `${chalky.yellow(this.fps)} fps`
+        this.bh.updateBlock(this.bh.width - chalky.parseAnsi(fpsText).normalTextLength-2, 0, -1, fpsText)
+    }
+    setFPS(fps:number){
+        this.fps = fps
+    }
+    protected incrementPartialFrameBuffer(){
+        this.partialFrameBuffer = (this.partialFrameBuffer + 1)%this.partialFrameBufferDelay
+    }
 }
