@@ -2,8 +2,11 @@
 import fs from "node:fs"
 import process from "node:process"
 import { convertToPiglatin } from "./piglatin"
-export const newTest = (params: testParamsType): string[] => {
+import { getGlobalStore } from "../store"
+export const newTest = (): string[] => {
     // TODO: update words.json to allow performing words select based on params. Params based customisation for this function as well
+    const storeData = getGlobalStore()
+    const params = storeData.settings.testParams
     const listOfWords: string[] = []
     const wordsLength: number = 50 // TODO: more sensible method
     if(params.type=="random"){

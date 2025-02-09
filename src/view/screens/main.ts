@@ -3,13 +3,14 @@
 // typing test screen
 
 // NOTE: here update methods are to update the view buffer as well, render methods makes the updated buffer visible on screen
-import ANSI_CODES from "../../utils/ansiCodes";
 import chalky from "../../utils/Chalky";
 import EventBus from "../../utils/eventBus";
 import { getTimeFormatFromMilliseconds } from "../../utils/helperFunctions";
-import { _keys, terminalDimension, writeOnScreen } from "../../utils/io";
+import { _keys} from "../../utils/io";
+import { getGlobalStore } from "../../utils/store";
 import { newTest, testParamsConstraints, testParamsType } from "../../utils/typingtestgeneration";
 import { BaseScreen } from "./Base";
+import { ResultData } from "./result";
 export class MainScreen extends BaseScreen {
     private testText: string[];
     private testParams: testParamsType
@@ -43,20 +44,8 @@ export class MainScreen extends BaseScreen {
         this.currentWord = ""
         this.formattedUserWords = []
         // default value 
-        this.testParams = {
-            timeLimit: testParamsConstraints.timeLimit.default,
-            allowPunctuation: testParamsConstraints.allowPunctuation.default,
-            allowUppercase: testParamsConstraints.allowPunctuation.default,
-            type: testParamsConstraints.type.default
-        }        
-        this.testText = this.generateTest();
-        this.eventHandler.on(
-            "settingsUpdated", (data: testParamsType)=>{
-                this.testParams = {...data}
-                // create new test
-                this.refresh();
-            }
-        )
+        this.testParams = {...getGlobalStore().settings.testParams}
+        this.testText = newTest();
     }
 
     private resetVariables (){
@@ -85,11 +74,6 @@ export class MainScreen extends BaseScreen {
 
     public stop() {
         this.running = false
-    }
-
-    private generateTest() {
-        // fetch settings from settings screen
-        return newTest(this.testParams)
     }
     public keyHandle(k: string): void {
         // commands handle
@@ -186,15 +170,11 @@ export class MainScreen extends BaseScreen {
             ansiCodeLength: formattedWord.length - letterCount
         }
     }
-
     public refresh() {
+        this.testParams = {...getGlobalStore().settings.testParams}
         this.resetVariables()
-        this.testText = this.generateTest()
+        this.testText = newTest()
     }
-    public updateTestSettings() {
-        //TODO: modify the time, words format etc
-    }
-
     private getFormattedDisplayTest(): string[] {
         // ansicoded text for the test
         const lines: string[] = []
@@ -244,19 +224,7 @@ export class MainScreen extends BaseScreen {
                 this.errorWordsCount += 1
             }
         }
-        const resultData : {wpm: number, cpm: number,
-            charactersInfo: {
-                correct: number,
-                error: number,
-                skipped: number
-            },
-            wordsInfo: {
-                correct: number,
-                error: number
-            },
-            formattedWords: {formattedWord: string, letterCount: number}[],
-            timeLimit: number
-        } ={
+        const resultData : ResultData ={
             wpm: this.getWPM(),
             cpm: this.getCPM(),
             charactersInfo: {
@@ -269,7 +237,8 @@ export class MainScreen extends BaseScreen {
                 error: this.errorWordsCount
             },
             timeLimit: this.testParams.timeLimit,
-            formattedWords: this.formattedUserWords
+            formattedWords: this.formattedUserWords,
+            beatHighestRecord: (getGlobalStore().highestWPM.wpm || -1) < this.getWPM() 
         }
         this.eventHandler.emit("displayResult", resultData)
         this.stop();
@@ -332,10 +301,26 @@ export class MainScreen extends BaseScreen {
             `${chalky.bgYellow(" ctrl + c: exit ")}     ${chalky.black.bgWhite(" ctrl + s: settings ")}      ${chalky.bgCyan(" ctrl + r: restart ")}  `,
             true
         )
-        this.bh.updateLine(
-            this.bh.height - 1,
-            "Highest WPM Record: 50"
-        )
+        const highestRecord = getGlobalStore().highestWPM
+        if(highestRecord.wpm!=null && highestRecord.accuracy!=null){
+            const text = `Your Best : ${chalky.green(highestRecord.wpm)} wpm (${chalky.yellow(highestRecord.accuracy + "%")} accuracy)`
+            this.bh.clearLine(this.bh.height - 1)
+            this.bh.updateBlock(
+                this.bh.width - chalky.parseAnsi(text).normalTextLength,
+                this.bh.height - 1, 
+                -1,
+                text
+            )
+        }else{
+            const text = `Highest WPM Record: ${chalky.yellow("UNSET")}`
+            this.bh.clearLine(this.bh.height - 1)
+            this.bh.updateBlock(
+                this.bh.width - chalky.parseAnsi(text).normalTextLength,
+                this.bh.height - 1, 
+                -1,
+                text
+            )
+        }
     }
     public update(): void {
         if(this.partialFrameBuffer==0){

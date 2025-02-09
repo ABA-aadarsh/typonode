@@ -1,7 +1,8 @@
 import { BufferHandler } from "../../utils/bufferHandler";
 import chalky from "../../utils/Chalky";
 import EventBus from "../../utils/eventBus";
-import { clearEntireTerminal, clearVisibleScreen } from "../../utils/io";
+import { clearEntireTerminal } from "../../utils/io";
+import { getGlobalStore } from "../../utils/store";
 
 // parent class for all screens
 export class BaseScreen {
@@ -36,9 +37,13 @@ export class BaseScreen {
     keyHandle(k: string){}
     refresh(){}
     updateFPS(){
-        this.bh.clearLine(0)
-        const fpsText = `${chalky.yellow(this.fps)} fps`
-        this.bh.updateBlock(this.bh.width - chalky.parseAnsi(fpsText).normalTextLength-2, 0, -1, fpsText)
+        if(getGlobalStore().settings.showFPS){
+            this.bh.clearLine(0)
+            const fpsText = `${chalky.yellow(this.fps)} fps`
+            this.bh.updateBlock(this.bh.width - chalky.parseAnsi(fpsText).normalTextLength-2, 0, -1, fpsText)
+        }else{
+            this.bh.clearLine(0)
+        }
     }
     setFPS(fps:number){
         this.fps = fps

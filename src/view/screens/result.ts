@@ -1,24 +1,26 @@
 import ANSI_CODES from "../../utils/ansiCodes";
 import chalky from "../../utils/Chalky";
 import EventBus from "../../utils/eventBus";
-import { terminalDimension, writeOnScreen } from "../../utils/io";
+import { _saveintoStoreJSON, updateHighestScore } from "../../utils/store";
 import { BaseScreen } from "./Base";
+export type ResultData = {
+    wpm: number,
+    cpm: number,
+    charactersInfo: {
+        correct: number,
+        error: number,
+        skipped: number
+    },
+    wordsInfo: {
+        correct: number,
+        error: number
+    },
+    formattedWords: {formattedWord: string, letterCount: number}[],
+    timeLimit: number,
+    beatHighestRecord: boolean
+}
 export class ResultScreen extends BaseScreen{
-    private resultData: {
-        wpm: number,
-        cpm: number,
-        charactersInfo: {
-            correct: number,
-            error: number,
-            skipped: number
-        },
-        wordsInfo: {
-            correct: number,
-            error: number
-        },
-        formattedWords: {formattedWord: string, letterCount: number}[],
-        timeLimit: number
-    } | null = null;
+    private resultData: ResultData | null = null;
     constructor(
         {eventHandler}: {
             eventHandler: EventBus
@@ -45,6 +47,7 @@ export class ResultScreen extends BaseScreen{
     updateResultSection(){
         if(this.resultData!=null)
         {
+            let isNewRecord : boolean = false
             const startLineIndex : number = 2
             const wordInfo = this.resultData.wordsInfo
             const charInfo = this.resultData.charactersInfo
@@ -55,11 +58,16 @@ export class ResultScreen extends BaseScreen{
                     /(charInfo.correct+charInfo.skipped+charInfo.error) * 100
                 ) 
             }
+            if(this.resultData.beatHighestRecord){
+                isNewRecord = true
+                updateHighestScore(this.resultData.wpm, accuray)
+                _saveintoStoreJSON()
+            }
             this.bh.updateLine(
                 startLineIndex + 0, 
                 ` WPM: ${chalky.yellow(this.resultData.wpm)} (${chalky.style(wordInfo.correct,[ANSI_CODES.green])} / ${
-                    chalky.style(wordInfo.error,[ANSI_CODES.red]), true
-                })`
+                    chalky.style(wordInfo.error,[ANSI_CODES.red])
+                }) ${chalky.bgCyan.white(" [NEW RECORD]!!! ")}`, true
             )
             this.bh.updateLine(
                 startLineIndex + 1,

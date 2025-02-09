@@ -9,6 +9,7 @@ import EventBus from "../utils/eventBus";
 import { ResultScreen } from "./screens/result";
 import chalky from "../utils/Chalky";
 import ANSI_CODES from "../utils/ansiCodes";
+import { checkStore, createDefaultStore, fetchFromStoreJSON } from "../utils/store";
 
 
 // stdin and stdout configure
@@ -29,6 +30,15 @@ export class SM {
     
     constructor(){
         process.stdout.write("\x1b[3J\x1b[2J\x1b[H"); // clear scrollback buffer + clear visible screen and
+        if (!checkStore()) {
+            try {
+                createDefaultStore();
+            } catch (error) {
+                this.eventHandler.emit("closeAppOnError", error)
+            }
+        }else{
+            fetchFromStoreJSON() // globalStore
+        }
         this.screensList = [
             {id: "main", screen:  new MainScreen({eventHandler: this.eventHandler})},
             {id: "setting", screen: new SettingScreen({eventHandler: this.eventHandler})},
@@ -38,6 +48,7 @@ export class SM {
         this.currentScreen = this.screensList[0].screen
         this.justSwitched = true
         this.intervalRunning = null
+
 
         this.eventHandler.on(
             "displayResult", (data)=>{

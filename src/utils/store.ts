@@ -3,10 +3,30 @@
 import { homedir } from "os"
 import path from "path"
 import fs from "fs"
+
+// globalStore will be used for accessing the states in all screens through getGlobalStore, and is updated when the settings or highest wpm are changed
+let globalStore: storeDataType = {
+    "highestWPM": {
+        "wpm": null,
+        "accuracy": null
+    },
+    "settings":{
+        "testParams": {
+            "timeLimit": 30,
+            "allowUppercase": false,
+            "allowPunctuation": false,
+            "type": "common"
+        },
+        "showFPS":false
+    }
+}
+export const getGlobalStore = ()=>{
+    return globalStore
+}
 export type  storeDataType = {
     "highestWPM": {
         "wpm": null|number,
-        "date": null|Date
+        "accuracy": null|number
     },
     "settings":{
         "testParams": {
@@ -31,26 +51,18 @@ export const createDefaultStore = ()=>{
             fs.writeFileSync(
                 storeFilePath, 
                 JSON.stringify(
-                    {
-                        "highestWPM": {
-                            "wpm": null,
-                            "date": null
-                        },
-                        "settings":{
-                            "testParams": {
-                                "timeLimit": 30,
-                                "allowUppercase": false,
-                                "allowPunctuation": false,
-                                "type": "common"
-                            },
-                            "showFPS":false
-                        }
-                    }
+                    globalStore // which will be in its default form
                 ), "utf-8"
             )
         }else{
             try{
                 fs.mkdirSync(path.resolve(homedir(), ".config", "typonode"))
+                fs.writeFileSync(
+                    storeFilePath, 
+                    JSON.stringify(
+                        globalStore // which will be in its default form
+                    ), "utf-8"
+                )
             }catch(e){
                 throw new Error("Can't make store.json for storing data.\nMake a /.config/typonode folder in " + homedir())
             }
@@ -58,31 +70,33 @@ export const createDefaultStore = ()=>{
     }
 }
 
-export const getStoreData = (): storeDataType | undefined=>{
+// run only once through out the program during construction of screenManager
+export const fetchFromStoreJSON = ()=>{
     if(checkStore()){
         const storeData: storeDataType = JSON.parse(fs.readFileSync(storeFilePath, "utf-8"))
-        return (storeData)
+        globalStore = storeData
     }
 }
-
-
-export const updateStoreData = (
-    data: storeDataType
-):void =>{
-    if(checkStore()){
-        fs.writeFileSync(storeFilePath, JSON.stringify(data), "utf-8")
+export const _saveintoStoreJSON = ()=>{
+    // saves the current value of globalStore in to store.json
+    try {
+        fs.writeFileSync(storeFilePath, JSON.stringify(globalStore), "utf-8")
+    } catch (error) {
+        console.log(error)
     }
 }
 
 export const updateTestParamsInStore = (
     newTestParams: storeDataType["settings"]["testParams"]
-):boolean=>{
-    const storeData: storeDataType | undefined = getStoreData()
-    if(storeData){
-        storeData.settings.testParams = {...newTestParams}
-        fs.writeFileSync(storeFilePath, JSON.stringify(storeData), "utf-8")
-        return true
-    }else{
-        return false
-    }
+)=>{
+    globalStore.settings.testParams = {...newTestParams}
+}
+
+export const updateHighestScore = (wpm:number, accuracy:number)=>{
+    globalStore.highestWPM.wpm = wpm
+    globalStore.highestWPM.accuracy = accuracy
+}
+
+export const update_show_fps = (showFPS: boolean)=>{
+    globalStore.settings.showFPS = showFPS
 }

@@ -3,23 +3,23 @@
 
 import chalky from "../../utils/Chalky";
 import EventBus from "../../utils/eventBus";
-import { _keys, terminalDimension, writeOnScreen } from "../../utils/io";
-import { checkStore, createDefaultStore, getStoreData, updateTestParamsInStore } from "../../utils/store";
-import { testParamsConstraints, testParamsConstraintsType } from "../../utils/typingtestgeneration";
+import { _keys, terminalDimension } from "../../utils/io";
+import { _saveintoStoreJSON, getGlobalStore, update_show_fps, updateTestParamsInStore } from "../../utils/store";
+import { testParamsConstraints } from "../../utils/typingtestgeneration";
 import { BaseScreen } from "./Base";
 
-type testParams = {
-    // order matters
+type Settings = {
     timeLimit: number,
-    type: string,
     allowUppercase: boolean,
     allowPunctuation: boolean,
+    type: string,
+    showFPS: boolean
 }
 
 export class SettingScreen extends BaseScreen {
     private currentSettingParamIndex: number = 0
-    private savedTestParams: testParams
-    private bufferTestParams: testParams
+    private savedSettings: Settings
+    private bufferSettings: Settings
     private isSettingsUnsaved: boolean
     constructor(
         { eventHandler }: {
@@ -27,69 +27,56 @@ export class SettingScreen extends BaseScreen {
         }
     ) {
         super({ eventHandler: eventHandler })
-
-        if (!checkStore()) {
-            try {
-                createDefaultStore();
-            } catch (error) {
-                this.eventHandler.emit("closeAppOnError", error)
-            }
+        const storeData = getGlobalStore()
+        this.savedSettings = {
+            "timeLimit": storeData.settings.testParams.timeLimit,
+            "allowUppercase": storeData.settings.testParams.allowUppercase,
+            "allowPunctuation": storeData.settings.testParams.allowPunctuation,
+            "type": storeData.settings.testParams.type,
+            "showFPS": storeData.settings.showFPS,
         }
-        const storeData = getStoreData();
-        if (storeData == undefined) {
-            this.eventHandler.emit("closeAppOnError", "StoreData is undefined") // this will ideally close the app
-            // fallback and for typescript constraint
-            this.savedTestParams = {
-                timeLimit: testParamsConstraints.timeLimit.default,
-                allowUppercase: testParamsConstraints.allowUppercase.default,
-                allowPunctuation: testParamsConstraints.allowPunctuation.default,
-                type: testParamsConstraints.type.default
-            }
-        } else {
-            this.savedTestParams = storeData.settings.testParams
-        }
-        this.bufferTestParams = { ...this.savedTestParams } // initailised with saved settings
+        this.bufferSettings = { ...this.savedSettings } // initailised with saved settings
         this.isSettingsUnsaved = false
-        this.eventHandler.emit("settingsUpdated", this.savedTestParams) // initially pass the settings to main screen
+        // this.eventHandler.emit("settingsUpdated", this.savedSettings) // initially pass the settings to main screen
     }
     private updateSettingParam(direction: 1 | -1) {
         // direction 1 is passed when arrowRight is pressed and -1 when arrowDown is arrowLeft
         switch (this.currentSettingParamIndex) {
             case 0:
                 // time
-                let c: number = this.bufferTestParams.timeLimit
+                let c: number = this.bufferSettings.timeLimit
                 const maxTimeLimit = testParamsConstraints.timeLimit.max
                 const minTimeLimit = testParamsConstraints.timeLimit.min
                 c += direction * 5
                 if (c > maxTimeLimit) c = 5;
                 else if (c < minTimeLimit) c = maxTimeLimit;
-                this.bufferTestParams.timeLimit = c
+                this.bufferSettings.timeLimit = c
                 break
             case 1:
                 // lowercase
-                this.bufferTestParams.allowUppercase = !this.bufferTestParams.allowUppercase
+                this.bufferSettings.allowUppercase = !this.bufferSettings.allowUppercase
                 break
             case 2:
                 // punctutation allowed
-                this.bufferTestParams.allowPunctuation = !this.bufferTestParams.allowPunctuation
+                this.bufferSettings.allowPunctuation = !this.bufferSettings.allowPunctuation
                 break
             case 3:
                 // test type
                 const options = testParamsConstraints.type.options
-                let ci: number = options.findIndex(x => x == this.bufferTestParams.type)
+                let ci: number = options.findIndex(x => x == this.bufferSettings.type)
                 ci = (ci + 1 * direction) % options.length
                 if (ci < 0) ci += options.length
-                this.bufferTestParams.type = options[ci]
+                this.bufferSettings.type = options[ci]
                 break
             case 4:
-                // this.bufferTestParams.showFPS != this.bufferTestParams.showFPS
+                this.bufferSettings.showFPS = !this.bufferSettings.showFPS
                 break
         }
         this.isSettingsUnsaved = true
     }
 
     keyHandle(k: string): void {
-        const noOfSettingParams: number = Object.keys(this.bufferTestParams).length
+        const noOfSettingParams: number = Object.keys(this.bufferSettings).length
         switch (k) {
             case _keys.arrowLeft:
                 this.updateSettingParam(-1)
@@ -113,20 +100,24 @@ export class SettingScreen extends BaseScreen {
     }
     private saveSettings() {
         // persist settings value
-        this.savedTestParams = { ...this.bufferTestParams }
-        if (updateTestParamsInStore(this.savedTestParams)) {
-            this.isSettingsUnsaved = false
-            this.eventHandler.emit("settingsUpdated", this.savedTestParams)
-        }
+        this.savedSettings = { ...this.bufferSettings }
+        update_show_fps(this.savedSettings.showFPS)
+        updateTestParamsInStore(
+            {
+                allowPunctuation: this.savedSettings.allowPunctuation,
+                allowUppercase: this.savedSettings.allowUppercase,
+                timeLimit: this.savedSettings.timeLimit,
+                type: this.savedSettings.type
+            }
+        )
+        _saveintoStoreJSON()
+        this.isSettingsUnsaved = false
     }
     private settingParamHeader(h: string, i: number): string {
         if (i == this.currentSettingParamIndex) {
             return chalky.bgCyan(" ") + " " + h
         }
         return "  " + h
-    }
-    getSettingsData(): testParams {
-        return { ...this.savedTestParams }
     }
     updateTitle(): void {
         const unsavedMessage = chalky.red("*") + chalky.yellow("Unsaved Settings (ctrl+o to save)")
@@ -138,20 +129,20 @@ export class SettingScreen extends BaseScreen {
     updateMenu(): void {
         this.bh.updateBlock(0, 3, -1, chalky.bgYellow(" ") + " Options")
         this.bh.updateLine(5,
-            `${this.settingParamHeader("Time Limit", 0)} : ${this.bufferTestParams.timeLimit}`, true
+            `${this.settingParamHeader("Time Limit", 0)} : ${this.bufferSettings.timeLimit}`, true
         )
         this.bh.updateLine(6,
-            `${this.settingParamHeader("Allow Uppercase", 1)} : ${this.bufferTestParams.allowUppercase}`, true
+            `${this.settingParamHeader("Allow Uppercase", 1)} : ${this.bufferSettings.allowUppercase}`, true
         )
         this.bh.updateLine(7,
-            `${this.settingParamHeader("Punctuation Allowed", 2)} : ${this.bufferTestParams.allowPunctuation}`, true
+            `${this.settingParamHeader("Punctuation Allowed", 2)} : ${this.bufferSettings.allowPunctuation}`, true
         )
         this.bh.updateLine(8,
-            `${this.settingParamHeader("Test Type: ", 3)}: ${this.bufferTestParams.type}   `, true
+            `${this.settingParamHeader("Test Type: ", 3)}: ${this.bufferSettings.type}   `, true
         )
-        // this.bh.updateLine(9,
-        //     `${this.settingParamHeader("Show FPS: ", 4)}: ${this.bufferTestParams.showFPS}   `, true
-        // )
+        this.bh.updateLine(9,
+            `${this.settingParamHeader("Show FPS: ", 4)}: ${this.bufferSettings.showFPS}   `, true
+        )
     }
     updateBottomPanel(): void {
         this.bh.updateLine(
