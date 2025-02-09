@@ -1,7 +1,7 @@
 import ANSI_CODES from "../../utils/ansiCodes";
 import chalky from "../../utils/Chalky";
 import EventBus from "../../utils/eventBus";
-import { _saveintoStoreJSON, updateHighestScore } from "../../utils/store";
+import { _saveintoStoreJSON, getGlobalStore, updateHighestScore } from "../../utils/store";
 import { BaseScreen } from "./Base";
 export type ResultData = {
     wpm: number,
@@ -65,21 +65,25 @@ export class ResultScreen extends BaseScreen{
             }
             this.bh.updateLine(
                 startLineIndex + 0, 
-                ` WPM: ${chalky.yellow(this.resultData.wpm)} (${chalky.style(wordInfo.correct,[ANSI_CODES.green])} / ${
-                    chalky.style(wordInfo.error,[ANSI_CODES.red])
-                }) ${chalky.bgCyan.white(" [NEW RECORD]!!! ")}`, true
+                ` WPM: ${chalky.yellow(this.resultData.wpm)} (${chalky.green(wordInfo.correct + " correct")} / ${
+                    chalky.red(wordInfo.error + " errored") 
+                }) ${isNewRecord ? chalky.bgCyan.white(" [NEW RECORD]!!! ") : ""}`, true
             )
             this.bh.updateLine(
                 startLineIndex + 1,
                 ` Accuracy: ${
-                    chalky.yellow(accuray)
-                }%`, true
+                    chalky.yellow(accuray + "%") 
+                }`, true
             )
             this.bh.updateLine(
                 startLineIndex + 2,
-                ` Characters: (${chalky.style(charInfo.correct,[ANSI_CODES.green])} / ${
-                    chalky.style(charInfo.error,[ANSI_CODES.red])
-                } / ${chalky.style(charInfo.skipped,[ANSI_CODES.yellow])})`, true
+                ` Characters: (${chalky.green(charInfo.correct)} / ${
+                    chalky.red(charInfo.error)
+                } / ${chalky.yellow(charInfo.skipped)})`, true
+            )
+            this.bh.updateLine(
+                startLineIndex + 3,
+                ` Time: ${chalky.yellow(getGlobalStore().settings.testParams.timeLimit + " sec")}`, true
             )
             this.bh.updateLine(
                 startLineIndex + 6, " Typed- History", false
@@ -143,7 +147,7 @@ export class ResultScreen extends BaseScreen{
     updateBottomPanel(){
         this.bh.updateLine(
             this.bh.height - 1, 
-            `${chalky.style(" ctrl + c: exit ", [ANSI_CODES.bgYellow])}     ${chalky.style(" ctrl + s: settings ", [ANSI_CODES.bgWhite, ANSI_CODES.black])}      ${chalky.style(" ctrl + t: new test ", [ANSI_CODES.bgCyan])}  `,
+            `${chalky.bgYellow(" ctrl + c: exit ")}     ${chalky.bgWhite.black(" ctrl + s: settings ")}      ${chalky.bgCyan(" ctrl + t: new test ")}  `,
             true
         )
     }

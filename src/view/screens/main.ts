@@ -43,6 +43,7 @@ export class MainScreen extends BaseScreen {
         this.currentCharIndex = 0
         this.currentWord = ""
         this.formattedUserWords = []
+        this.showCursor = true
         // default value 
         this.testParams = {...getGlobalStore().settings.testParams}
         this.testText = newTest();
@@ -156,7 +157,9 @@ export class MainScreen extends BaseScreen {
         }
         if (testWord.length > userWord.length) {
             const remainingChars = testWord.slice(i)
-            formattedWord += (completed)? chalky.yellow(remainingChars): chalky.dim(remainingChars)
+            formattedWord += (completed)? chalky.yellow(remainingChars): (
+                isCurrent ? remainingChars: chalky.dim(remainingChars)
+            )
         } else if (userWord.length > testWord.length) {
             formattedWord += chalky.red.underline(userWord.slice(i))
         }
@@ -201,11 +204,16 @@ export class MainScreen extends BaseScreen {
                 // in new line
                 lines.push(currentLine)
                 currentLine = " " + formattedWord + " "
-                charCount = letterCount + 2
+                charCount = letterCount + 1 // the first space is already counted by the paddingX
             }else{
                 // same line
                 currentLine += formattedWord + " "
                 charCount += letterCount + 1
+            }
+            // cursor position
+            if(i==this.currentWordIndex){
+                this.cursorPosition.y = 4 + lines.length + 1 // 4 because in updateTestSection, startY is 4, and +1 since currentLine is not added to linesList
+                this.cursorPosition.x = (paddingX/2) + charCount + 1 - letterCount + this.currentWord.length // 1 for brackets                 
             }
         }
         if(currentLine!=""){
@@ -312,7 +320,7 @@ export class MainScreen extends BaseScreen {
                 text
             )
         }else{
-            const text = `Highest WPM Record: ${chalky.yellow("UNSET")}`
+            const text = `Your Best : ${chalky.yellow("UNSET")}`
             this.bh.clearLine(this.bh.height - 1)
             this.bh.updateBlock(
                 this.bh.width - chalky.parseAnsi(text).normalTextLength,
@@ -335,6 +343,6 @@ export class MainScreen extends BaseScreen {
         this.updateTestSection();
         this.updateCurrentWordSection();
         this.updateBottomPanel();
-        this.incrementPartialFrameBuffer()
+        this.incrementPartialFrameBuffer();
     }
 }

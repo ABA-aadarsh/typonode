@@ -66,9 +66,9 @@ export class SM {
                     process.stdout.cursorTo(0,0)
                     console.log(
                         `
-                            ${chalky.style("App closed due to error.", [ANSI_CODES.red])}\n
+                            ${chalky.red("App closed due to error.")}\n
 
-                            ${chalky.style("Error:", [ANSI_CODES.bgRed, ANSI_CODES.white])}\n
+                            ${chalky.bgRed.white("Error:", )}\n
 
                             ${errorMessage}
                         `

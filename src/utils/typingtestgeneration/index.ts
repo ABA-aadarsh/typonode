@@ -1,6 +1,5 @@
 // generate typing test words array based on params
 import fs from "node:fs"
-import process from "node:process"
 import { convertToPiglatin } from "./piglatin"
 import { getGlobalStore } from "../store"
 export const newTest = (): string[] => {
@@ -51,9 +50,6 @@ export const testParamsConstraints = {
     "allowUppercase": {
         default: false
     },
-    "allowPunctuation": {
-        default: false
-    },
     "showFPS": {
         default: true
     }
@@ -64,5 +60,4 @@ export type testParamsType = {
     "timeLimit": number,
     "type": string,
     "allowUppercase": boolean,
-    "allowPunctuation": boolean
 }

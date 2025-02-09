@@ -106,7 +106,7 @@ export class BufferHandler {
         }
     }
 
-    public updateBuffer(): string{
+    public updateBufferAndGetBufferString(): string{
         // updates the buffer and returns the render text
         // stdout of render text with update the terminal screen
         let updationString: string = ""

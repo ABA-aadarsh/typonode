@@ -14,7 +14,6 @@ let globalStore: storeDataType = {
         "testParams": {
             "timeLimit": 30,
             "allowUppercase": false,
-            "allowPunctuation": false,
             "type": "common"
         },
         "showFPS":false
@@ -32,7 +31,6 @@ export type  storeDataType = {
         "testParams": {
             "timeLimit": number,
             "allowUppercase": boolean,
-            "allowPunctuation": boolean,
             "type": string,
         },
         "showFPS": boolean

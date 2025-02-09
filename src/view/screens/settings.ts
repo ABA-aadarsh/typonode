@@ -11,7 +11,6 @@ import { BaseScreen } from "./Base";
 type Settings = {
     timeLimit: number,
     allowUppercase: boolean,
-    allowPunctuation: boolean,
     type: string,
     showFPS: boolean
 }
@@ -31,7 +30,6 @@ export class SettingScreen extends BaseScreen {
         this.savedSettings = {
             "timeLimit": storeData.settings.testParams.timeLimit,
             "allowUppercase": storeData.settings.testParams.allowUppercase,
-            "allowPunctuation": storeData.settings.testParams.allowPunctuation,
             "type": storeData.settings.testParams.type,
             "showFPS": storeData.settings.showFPS,
         }
@@ -57,10 +55,6 @@ export class SettingScreen extends BaseScreen {
                 this.bufferSettings.allowUppercase = !this.bufferSettings.allowUppercase
                 break
             case 2:
-                // punctutation allowed
-                this.bufferSettings.allowPunctuation = !this.bufferSettings.allowPunctuation
-                break
-            case 3:
                 // test type
                 const options = testParamsConstraints.type.options
                 let ci: number = options.findIndex(x => x == this.bufferSettings.type)
@@ -68,7 +62,7 @@ export class SettingScreen extends BaseScreen {
                 if (ci < 0) ci += options.length
                 this.bufferSettings.type = options[ci]
                 break
-            case 4:
+            case 3:
                 this.bufferSettings.showFPS = !this.bufferSettings.showFPS
                 break
         }
@@ -104,7 +98,6 @@ export class SettingScreen extends BaseScreen {
         update_show_fps(this.savedSettings.showFPS)
         updateTestParamsInStore(
             {
-                allowPunctuation: this.savedSettings.allowPunctuation,
                 allowUppercase: this.savedSettings.allowUppercase,
                 timeLimit: this.savedSettings.timeLimit,
                 type: this.savedSettings.type
@@ -135,13 +128,10 @@ export class SettingScreen extends BaseScreen {
             `${this.settingParamHeader("Allow Uppercase", 1)} : ${this.bufferSettings.allowUppercase}`, true
         )
         this.bh.updateLine(7,
-            `${this.settingParamHeader("Punctuation Allowed", 2)} : ${this.bufferSettings.allowPunctuation}`, true
+            `${this.settingParamHeader("Test Type: ", 2)}: ${this.bufferSettings.type}   `, true
         )
         this.bh.updateLine(8,
-            `${this.settingParamHeader("Test Type: ", 3)}: ${this.bufferSettings.type}   `, true
-        )
-        this.bh.updateLine(9,
-            `${this.settingParamHeader("Show FPS: ", 4)}: ${this.bufferSettings.showFPS}   `, true
+            `${this.settingParamHeader("Show FPS: ", 3)}: ${this.bufferSettings.showFPS}   `, true
         )
     }
     updateBottomPanel(): void {
@@ -157,7 +147,7 @@ export class SettingScreen extends BaseScreen {
         )
         this.bh.updateLine(
             this.bh.height - 2, 
-            `${chalky.bgYellow(" ctrl + c: exit ")}     ${chalky.black.bgWhite(" ctrl + s: settings ")}      ${chalky.bgCyan(" ctrl + r: restart ")}`,
+            `${chalky.bgYellow(" ctrl + c: exit ")}     ${chalky.black.bgWhite(" ctrl + t: new test ")}    `,
             true
         )
     }

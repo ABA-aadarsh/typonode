@@ -1,7 +1,7 @@
 import { BufferHandler } from "../../utils/bufferHandler";
 import chalky from "../../utils/Chalky";
 import EventBus from "../../utils/eventBus";
-import { clearEntireTerminal } from "../../utils/io";
+import { clearEntireTerminal, disableCursor } from "../../utils/io";
 import { getGlobalStore } from "../../utils/store";
 
 // parent class for all screens
@@ -12,11 +12,14 @@ export class BaseScreen {
     protected eventHandler : EventBus;
     protected bh: BufferHandler;
     private  fps: number;
+    public cursorPosition : {x:number, y:number}
+    public showCursor: boolean = false
     constructor(
         {
             eventHandler
         }: {eventHandler: EventBus}
     ){
+        this.cursorPosition = {x:0, y:0}
         this.fps = 0
         this.bh = new BufferHandler()
         this.eventHandler = eventHandler
@@ -27,8 +30,14 @@ export class BaseScreen {
             clearEntireTerminal()
             this.partialFrameBuffer = 0
         }
-        process.stdout.cursorTo(0,0)
-        process.stdout.write(this.bh.updateBuffer());
+        let _bufferString : string = `\x1B[$0;0H` + this.bh.updateBufferAndGetBufferString() // the initial ansi makes sure that the writing starts from the top left
+        if(this.showCursor){
+            _bufferString += `\x1B[${this.cursorPosition.y};${this.cursorPosition.x}H`; // cusor position
+            _bufferString += "\x1B[?25h"; // show cursor
+        }else{
+            _bufferString += "\x1B[?25l" // hide cursor
+        }
+        process.stdout.write(_bufferString)
     }
     resizeScreen(){
         this.bh.resize()
