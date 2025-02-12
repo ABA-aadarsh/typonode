@@ -115,13 +115,12 @@ export class ResultScreen extends BaseScreen{
             if(currentLine!=""){
                 lines.push(currentLine)
             }
-
-            const startY: number = startLineIndex + 7
             let i = 0
             if(this.typedWordsInitialLineIndex<0) this.typedWordsInitialLineIndex = 0;
             else if (this.typedWordsInitialLineIndex >= lines.length ){
                 this.typedWordsInitialLineIndex =  Math.min(this.typedWordsInitialLineIndex - 3, lines.length)
             }
+            const startY: number = startLineIndex + 7
             this.bh.updateLine(
                 startLineIndex + 6, ` Typed- History:   < ${Math.ceil((this.typedWordsInitialLineIndex)/maxLineLimit) + 1}/${Math.ceil(lines.length/maxLineLimit)} >` , false
             )
@@ -133,29 +132,21 @@ export class ResultScreen extends BaseScreen{
             for(i; i<maxLineLimit; i++) this.bh.clearLine(startY + i)
 
             // guidelines
-            if(terminalDimension.height > 19){
+            if(terminalDimension.height - 2 > startLineIndex + 13){
                 this.bh.updateLine(
-                    startLineIndex + 13,
+                    startLineIndex + 11,
                     `${chalky.bgYellow(" ")} ${chalky.yellow("Color Coding Info: ")}`
                 )
                 this.bh.updateLine(
-                    startLineIndex + 14,
-                    `${chalky.yellow("y")} - skipped char`
+                    startLineIndex + 12,
+                    `${chalky.yellow("y")} - skipped char    ${chalky.green("g")} - correct char`
                 )
                 this.bh.updateLine(
-                    startLineIndex + 15,
-                    `${chalky.green("g")} - correct char`
-                )
-                this.bh.updateLine(
-                    startLineIndex + 16,
-                    `${chalky.red("e")} - wrong char`
-                )
-                this.bh.updateLine(
-                    startLineIndex + 17,
-                    `${chalky.red.underline("e")} - extra typed char`
+                    startLineIndex + 13,
+                    `${chalky.red("e")} - wrong char      ${chalky.red.underline("e")} - extra typed char`
                 )
             }else{
-                for(let i = 13; i<=17; i++){
+                for(let i = startLineIndex + 11; i<=startLineIndex + 13; i++){
                     this.bh.clearLine(i);
                 }
             }
