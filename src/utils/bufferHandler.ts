@@ -150,10 +150,4 @@ export class BufferHandler {
             }
         }
     }
-    // public checkWithString(compareString: string, yStart: number){
-    //     for(let i = 0; i<compareString.length; i++){
-    //         const y = Math.floor(i/this.width)
-
-    //     }
-    // }
 }

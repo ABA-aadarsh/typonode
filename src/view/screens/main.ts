@@ -271,8 +271,8 @@ export class MainScreen extends BaseScreen {
 
     private getWPM ():number{
         if(this.running && this.startTime){
-            return Math.round((this.correctCharCount * 60/5)/((new Date().getTime() - this.startTime)/1000))
-            //  cant use correctwords for wpm since not all words are born equal. average english word is of 5 charaacters
+            return Math.round((this.correctCharCount * 60/4)/((new Date().getTime() - this.startTime)/1000))
+            //  cant use correctwords for wpm since not all words are born equal. average english word is of 4 charaacters
         }
         return -1
     }
@@ -282,7 +282,7 @@ export class MainScreen extends BaseScreen {
         }
         return -1
     }
-    private updateInfoSection (){
+    private _buffer_updateInfoSection (){
         if(!this.running || !this.startTime){
             this.bh.updateLine(2, chalky.yellow.italic(" Start Typing..."), true)
         }else{
@@ -292,7 +292,7 @@ export class MainScreen extends BaseScreen {
             )
         }
     }
-    private updateTestSection (){
+    private _buffer_updateTestSection (){
         const ansiFormattedLines = this.getFormattedDisplayTest()
         const maxHeight: number = 3
         const startY: number = 4
@@ -306,13 +306,13 @@ export class MainScreen extends BaseScreen {
             this.bh.clearLine(startY + i)
         }
     }
-    private updateCurrentWordSection (){
+    private _buffer_updateCurrentWordSection (){
         this.bh.clearLine(this.bh.height - 5)
         this.bh.updateLine(
             this.bh.height -5, ` ${chalky.bgWhite(" ")} : ${this.currentWord}`, true
         )
     }
-    private updateTimeRemaining(){
+    private _buffer_updateTimeRemaining(){
         if(this.running && this.startTime){
             this.timeRemaining = (this.testParams.timeLimit*1000 - (new Date().getTime()- this.startTime)) 
             let t = getTimeFormatFromMilliseconds(this.timeRemaining || 0)
@@ -320,7 +320,7 @@ export class MainScreen extends BaseScreen {
             this.bh.updateBlock(this.bh.width -  chalky.parseAnsi(timeInfo).normalTextLength, 2, -1, timeInfo)
         }
     }
-    private updateBottomPanel(){
+    private _buffer_updateBottomPanel(){
         this.bh.updateLine(
             this.bh.height - 2, 
             `${chalky.bgYellow(" ctrl + c: exit ")}     ${chalky.black.bgWhite(" ctrl + s: settings ")}      ${chalky.bgCyan(" ctrl + r: restart ")}  `,
@@ -349,17 +349,17 @@ export class MainScreen extends BaseScreen {
     }
     public update(): void {
         if(this.partialFrameBuffer==0){
-            this.updateFPS()
-            this.updateInfoSection();
+            this._buffer_updateFPS()
+            this._buffer_updateInfoSection();
         }
-        this.updateTimeRemaining();
+        this._buffer_updateTimeRemaining();
         if(this.running && this.timeRemaining && this.timeRemaining<=0){
             this.showTestResult();
             return;
         }
-        this.updateTestSection();
-        this.updateCurrentWordSection();
-        this.updateBottomPanel();
+        this._buffer_updateTestSection();
+        this._buffer_updateCurrentWordSection();
+        this._buffer_updateBottomPanel();
         this.incrementPartialFrameBuffer();
     }
 }

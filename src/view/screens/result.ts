@@ -1,4 +1,3 @@
-import ANSI_CODES from "../../utils/ansiCodes";
 import chalky from "../../utils/Chalky";
 import EventBus from "../../utils/eventBus";
 import { _keys, terminalDimension } from "../../utils/io";
@@ -47,14 +46,14 @@ export class ResultScreen extends BaseScreen{
     ){
         this.resultData = data
     }
-    updateTitle(){
+    _buffer_updateTitle(){
         const title = "Result"
         this.bh.updateBlock(
             Math.floor(this.bh.width/2 - title.length/2),0,-1,
             title
         )
     }
-    updateResultSection(){
+    _buffer_updateResultSection(){
         if(this.resultData!=null)
         {
             let isNewRecord : boolean = false
@@ -156,7 +155,7 @@ export class ResultScreen extends BaseScreen{
             )
         }
     }
-    updateBottomPanel(){
+    _buffer_updateBottomPanel(){
         this.bh.updateLine(
             this.bh.height - 1, 
             `${chalky.bgYellow(" ctrl + c: exit ")}     ${chalky.bgWhite.black(" ctrl + s: settings ")}      ${chalky.bgCyan(" ctrl + t: new test ")}  `,
@@ -165,11 +164,11 @@ export class ResultScreen extends BaseScreen{
     }
     update(): void{
         if(this.partialFrameBuffer==0){
-            this.updateFPS()
+            this._buffer_updateFPS()
         }
-        this.updateTitle()
-        this.updateResultSection()
-        this.updateBottomPanel()
+        this._buffer_updateTitle()
+        this._buffer_updateResultSection()
+        this._buffer_updateBottomPanel()
         this.incrementPartialFrameBuffer()
     }
 

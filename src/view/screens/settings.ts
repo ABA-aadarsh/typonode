@@ -112,14 +112,14 @@ export class SettingScreen extends BaseScreen {
         }
         return "  " + h
     }
-    updateTitle(): void {
+    _buffer_updateTitle(): void {
         const unsavedMessage = chalky.red("*") + chalky.yellow("Unsaved Settings (ctrl+o to save)")
         this.bh.updateBlock(
             Math.floor(terminalDimension.width - chalky.stripAnsi(unsavedMessage).length), 1,
             -1, this.isSettingsUnsaved?  unsavedMessage: " ".repeat(chalky.stripAnsi(unsavedMessage).length)
         )
     }
-    updateMenu(): void {
+    _buffer_updateMenu(): void {
         this.bh.updateBlock(0, 3, -1, chalky.bgYellow(" ") + " Options")
         this.bh.updateLine(5,
             `${this.settingParamHeader("Time Limit", 0)} : ${this.bufferSettings.timeLimit}`, true
@@ -134,7 +134,7 @@ export class SettingScreen extends BaseScreen {
             `${this.settingParamHeader("Show FPS: ", 3)}: ${this.bufferSettings.showFPS}   `, true
         )
     }
-    updateBottomPanel(): void {
+    _buffer_updateBottomPanel(): void {
         this.bh.updateLine(
             this.bh.height - 5, 
             `${chalky.bgCyan(" ")} ${chalky.yellow("Arrow up/down to choose option")} `,
@@ -153,11 +153,11 @@ export class SettingScreen extends BaseScreen {
     }
     update(): void {
         if(this.partialFrameBuffer==0){
-            this.updateFPS()
+            this._buffer_updateFPS()
         }
-        this.updateTitle()
-        this.updateMenu()
-        this.updateBottomPanel()
+        this._buffer_updateTitle()
+        this._buffer_updateMenu()
+        this._buffer_updateBottomPanel()
         this.incrementPartialFrameBuffer()
     }
 }

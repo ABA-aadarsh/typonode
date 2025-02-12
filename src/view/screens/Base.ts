@@ -1,7 +1,6 @@
 import { BufferHandler } from "../../utils/bufferHandler";
 import chalky from "../../utils/Chalky";
 import EventBus from "../../utils/eventBus";
-import { clearEntireTerminal, disableCursor } from "../../utils/io";
 import { getGlobalStore } from "../../utils/store";
 
 // parent class for all screens
@@ -27,10 +26,10 @@ export class BaseScreen {
     render(cleanRender: boolean = false){
         if(cleanRender){
             this.bh.forceDirtyAll()
-            clearEntireTerminal()
             this.partialFrameBuffer = 0
         }
         let _bufferString : string = `\x1B[$0;0H` + this.bh.updateBufferAndGetBufferString() // the initial ansi makes sure that the writing starts from the top left
+        if(cleanRender) _bufferString = "\x1b[3J\x1b[2J\x1b[H" + _bufferString
         if(this.showCursor){
             _bufferString += `\x1B[${this.cursorPosition.y};${this.cursorPosition.x}H`; // cusor position
             _bufferString += "\x1B[?25h"; // show cursor
@@ -45,7 +44,7 @@ export class BaseScreen {
     update(){}
     keyHandle(k: string){}
     refresh(){}
-    updateFPS(){
+    _buffer_updateFPS(){
         if(getGlobalStore().settings.showFPS){
             this.bh.clearLine(0)
             const fpsText = `${chalky.yellow(this.fps)} fps`

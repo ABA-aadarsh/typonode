@@ -4,11 +4,10 @@ import process from "node:process";
 import { BaseScreen } from "./screens/Base";
 import { MainScreen } from "./screens/main";
 import { SettingScreen } from "./screens/settings";
-import { _keys, clearEntireTerminal, clearVisibleScreen, disableCursor, enableCursor } from "../utils/io";
+import { _keys, clearVisibleScreen, disableCursor, enableCursor } from "../utils/io";
 import EventBus from "../utils/eventBus";
 import { ResultScreen } from "./screens/result";
 import chalky from "../utils/Chalky";
-import ANSI_CODES from "../utils/ansiCodes";
 import { checkStore, createDefaultStore, fetchFromStoreJSON } from "../utils/store";
 
 
@@ -26,7 +25,7 @@ export class SM {
     private intervalRunning : null | NodeJS.Timeout
     private currentScreen: BaseScreen | null = null;
     private currentScreenId: string | null = null
-    private justSwitched : boolean // justSwitched is set when the switching occurs and after the render it is unset. on justswitched = true, the screen.render will clear entire screen and render
+    private isCleanRenderingRequired : boolean = false
     
     constructor(){
         process.stdout.write("\x1b[3J\x1b[2J\x1b[H"); // clear scrollback buffer + clear visible screen and
@@ -46,7 +45,6 @@ export class SM {
         ]
         this.currentScreenId = "main"
         this.currentScreen = this.screensList[0].screen
-        this.justSwitched = true
         this.intervalRunning = null
 
 
@@ -97,7 +95,7 @@ export class SM {
     }
     handleScreenResize(){
         // width = no of columns . height = no of rows , available in terminalDimension
-        clearEntireTerminal()
+        this.isCleanRenderingRequired = true
         this.currentScreen?.resizeScreen()
         this.screensList.forEach(screenData=>{
             if(this.currentScreenId!=screenData.id){
@@ -111,9 +109,8 @@ export class SM {
             if(nsIndex!=-1){
                 this.currentScreenId = newScreenId
                 this.currentScreen = this.screensList[nsIndex].screen;
-                this.justSwitched = true
-                clearEntireTerminal()
-                this.currentScreen.update()
+                this.isCleanRenderingRequired = true
+                this.currentScreen.refresh()
             }
         }
     }
@@ -122,14 +119,13 @@ export class SM {
     }
     update(){
         if(this.currentScreen){
-            if(this.justSwitched) this.currentScreen.refresh()
             this.currentScreen.update();
         }
     }
     render(){
         if(this.currentScreen){
-            this.currentScreen.render(this.justSwitched); // do clean rendering if just switched
-            if(this.justSwitched) this.justSwitched = false;
+            this.currentScreen.render(this.isCleanRenderingRequired); // do clean rendering if just switched
+            if(this.isCleanRenderingRequired) this.isCleanRenderingRequired = false;
         }
     }
 }
