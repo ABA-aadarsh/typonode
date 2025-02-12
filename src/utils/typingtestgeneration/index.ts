@@ -2,12 +2,19 @@
 import fs from "node:fs"
 import { convertToPiglatin } from "./piglatin"
 import { getGlobalStore } from "../store"
+import { terminalDimension } from "../io"
 export const newTest = (): string[] => {
     // TODO: update words.json to allow performing words select based on params. Params based customisation for this function as well
+
+    // NOTE: the number of words that should be selected should be such that it must in minimum cover 3 lines of terminal
     const storeData = getGlobalStore()
     const params = storeData.settings.testParams
+    const terminalWidth = terminalDimension.width
+    let charLength: number = 0;
+    const paddingX : number = 2
+    let linesCount : number = 0
+    const maxLines : number = 4;
     const listOfWords: string[] = []
-    const wordsLength: number = 50 // TODO: more sensible method
     if(params.type=="random"){
         const i = Math.floor(Math.random()*testParamsConstraints.type.options.length)
         params.type = testParamsConstraints.type.options[i]
@@ -21,7 +28,7 @@ export const newTest = (): string[] => {
         }
         const json: { words: string[] } = JSON.parse(file)
         let randomIndex:number, isCapital : boolean
-        for(let i = 0; i<wordsLength; i++){
+        while(linesCount < maxLines){
             randomIndex = Math.floor(Math.random()*json.words.length)
             isCapital=false
             if(params.allowUppercase){
@@ -30,7 +37,13 @@ export const newTest = (): string[] => {
             let w = json.words[randomIndex]
             if(isCapital) w = w[0].toUpperCase() + w.slice(1);
             if(isPiglatin) w = convertToPiglatin(w);
-            listOfWords.push(w)
+            if(charLength + w.length + paddingX + 2 > terminalWidth){
+                linesCount ++
+                charLength = w.length + 1
+            }else{
+                charLength += w.length + 1
+            }
+            if(linesCount<maxLines) listOfWords.push(w);
         }
     }
     return listOfWords

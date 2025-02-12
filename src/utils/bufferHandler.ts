@@ -128,7 +128,7 @@ export class BufferHandler {
         }
     }
     public clearLine(y:number){
-        if(this.clearedLine[y]==true) return;
+        if(y>=this.height || this.clearedLine[y]==true) return;
         for(let i=0; i<this.width; i++){
             this.updateCell(i,y," ")
         }

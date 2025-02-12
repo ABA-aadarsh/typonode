@@ -12,7 +12,7 @@ import { newTest, testParamsConstraints, testParamsType } from "../../utils/typi
 import { BaseScreen } from "./Base";
 import { ResultData } from "./result";
 export class MainScreen extends BaseScreen {
-    private testText: string[];
+    private testText: string[] = [];
     private testParams: testParamsType
     private correctWordsCount : number = 0;
     private errorWordsCount: number = 0
@@ -27,8 +27,10 @@ export class MainScreen extends BaseScreen {
     private userTypedWords: string[] // words users typed (no fromatting)
     private formattedUserWords: {formattedWord: string, letterCount: number}[] // formatted user typed words  shown in the screen
 
-    private currentWordIndex: number
-    private currentCharIndex: number
+    private currentWordIndex: number // the current word index you are typing
+    private currentCharIndex: number // the next char index you are supposed to write
+    private initialLineDisplayIndex : number = 0;
+    private currentLineIndex : number = 0
     //  currentCharIndex is always equal to currentWord.length, it is to point the next char to be typed in testText[currentWordIndex] if it is not beyond the limit
     private currentWord: string
     constructor(
@@ -46,9 +48,14 @@ export class MainScreen extends BaseScreen {
         this.showCursor = true
         // default value 
         this.testParams = {...getGlobalStore().settings.testParams}
-        this.testText = newTest();
+        this.getMoreWords(true);
     }
-
+    private getMoreWords (clean:boolean=false){
+        if(clean){
+            this.testText = []
+        }
+        this.testText.push(...newTest());
+    }
     private resetVariables (){
         // reset the variables to their default value
         this.running = false
@@ -64,6 +71,7 @@ export class MainScreen extends BaseScreen {
         this.formattedUserWords = []
         this.timeRemaining = null
         this.partialFrameBuffer = 0
+        this.initialLineDisplayIndex = 0
     }
 
     public start() {
@@ -71,6 +79,11 @@ export class MainScreen extends BaseScreen {
         this.startTime = new Date().getTime()
         this.timeRemaining = this.testParams?.timeLimit || testParamsConstraints.timeLimit.default
         this.running = true
+    }
+    public refresh() {
+        this.testParams = {...getGlobalStore().settings.testParams}
+        this.resetVariables()
+        this.getMoreWords(true)
     }
 
     public stop() {
@@ -91,11 +104,11 @@ export class MainScreen extends BaseScreen {
             return
         }
         if (k == _keys.tab || (k == _keys.backspace || k==_keys.backspaceLinux) || k == _keys.enter || k == _keys.space) {
-            if (this.currentWord == "") return;
+            if (this.currentWord.length==0) return;
             else if(k==_keys.backspace || k==_keys.backspaceLinux){
                 const lastChar = this.currentWord[this.currentCharIndex - 1]
                 if(this.currentCharIndex >= this.testText[this.currentWordIndex].length){
-                    this.errorCharCount -= 1
+                    this.errorCharCount = Math.max(0, this.errorCharCount - 1)
                 }else{
                     if(lastChar == this.testText[this.currentWordIndex][this.currentCharIndex - 1]) this.correctCharCount -= 1
                     else this.errorCharCount -= 1
@@ -104,7 +117,7 @@ export class MainScreen extends BaseScreen {
                 this.currentCharIndex -= 1
             }
             else {
-                if(this.currentWordIndex > this.testText.length) return; // TODO: more test words as the user goes to the end of selected words limit ?
+                if(this.currentWordIndex > this.testText.length) return;
 
                 this.userTypedWords.push(this.currentWord);
                 this.formattedUserWords.push(
@@ -119,6 +132,11 @@ export class MainScreen extends BaseScreen {
                 this.currentWord = ""
                 this.currentWordIndex += 1
                 this.currentCharIndex = 0
+
+                if(this.testText.length - this.userTypedWords.length < 15){
+                    // 15 words is selected arbritarily
+                    this.getMoreWords()
+                }
                 return;
             }
         }
@@ -173,11 +191,6 @@ export class MainScreen extends BaseScreen {
             ansiCodeLength: formattedWord.length - letterCount
         }
     }
-    public refresh() {
-        this.testParams = {...getGlobalStore().settings.testParams}
-        this.resetVariables()
-        this.testText = newTest()
-    }
     private getFormattedDisplayTest(): string[] {
         // ansicoded text for the test
         const lines: string[] = []
@@ -212,7 +225,11 @@ export class MainScreen extends BaseScreen {
             }
             // cursor position
             if(i==this.currentWordIndex){
-                this.cursorPosition.y = 4 + lines.length + 1 // 4 because in updateTestSection, startY is 4, and +1 since currentLine is not added to linesList
+                this.currentLineIndex = lines.length + 1 // +1 since currentLine is not added to linesList
+                if(this.currentLineIndex - this.initialLineDisplayIndex > 2){
+                    this.initialLineDisplayIndex += 1
+                }
+                this.cursorPosition.y = 4 + (this.currentLineIndex - this.initialLineDisplayIndex) // 4 because in updateTestSection, startY is 4
                 this.cursorPosition.x = (paddingX/2) + charCount + 1 - letterCount + this.currentWord.length // 1 for brackets                 
             }
         }
@@ -277,12 +294,12 @@ export class MainScreen extends BaseScreen {
     }
     private updateTestSection (){
         const ansiFormattedLines = this.getFormattedDisplayTest()
-        const maxHeight: number = 5
+        const maxHeight: number = 3
         const startY: number = 4
         let i : number = 0
-        for(i; i<ansiFormattedLines.length && i<maxHeight; i++){
+        for(i; (i+this.initialLineDisplayIndex)<ansiFormattedLines.length && i<maxHeight; i++){
             this.bh.updateLine(
-                startY + i, ansiFormattedLines[i], true
+                startY + i, ansiFormattedLines[i + this.initialLineDisplayIndex], true
             )
         }
         for(i; i<maxHeight; i++){

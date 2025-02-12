@@ -1,6 +1,7 @@
 import ANSI_CODES from "../../utils/ansiCodes";
 import chalky from "../../utils/Chalky";
 import EventBus from "../../utils/eventBus";
+import { _keys, terminalDimension } from "../../utils/io";
 import { _saveintoStoreJSON, getGlobalStore, updateHighestScore } from "../../utils/store";
 import { BaseScreen } from "./Base";
 export type ResultData = {
@@ -21,6 +22,7 @@ export type ResultData = {
 }
 export class ResultScreen extends BaseScreen{
     private resultData: ResultData | null = null;
+    private typedWordsInitialLineIndex : number = 0
     constructor(
         {eventHandler}: {
             eventHandler: EventBus
@@ -30,7 +32,15 @@ export class ResultScreen extends BaseScreen{
     }
 
     keyHandle(k: string): void {
-        
+        // NOTE: though we are simply incrementing or decrementing them, but they will be evaluated (and may be updated in updateResultSection) if they dont meet the criteria
+        switch(k){
+            case _keys.arrowLeft:
+                this.typedWordsInitialLineIndex -= 3 // 3 since maxLineLimit in updateResultSection is 3
+                break;
+            case _keys.arrowRight:
+                this.typedWordsInitialLineIndex += 3
+                break;
+        }
     }
     setResultData(
         data: typeof this.resultData
@@ -85,14 +95,11 @@ export class ResultScreen extends BaseScreen{
                 startLineIndex + 3,
                 ` Time: ${chalky.yellow(getGlobalStore().settings.testParams.timeLimit + " sec")}`, true
             )
-            this.bh.updateLine(
-                startLineIndex + 6, " Typed- History", false
-            )
-
             const lines: string[] = []
             let currentLine: string = " "
             let charCount : number = 0
-            let paddingX : number = 2
+            const paddingX = 2
+            const maxLineLimit = 3
             const maxCharLimit : number = this.bh.width
             for(let i = 0; i<this.resultData.formattedWords.length; i++){
                 const word = this.resultData.formattedWords[i]
@@ -110,34 +117,48 @@ export class ResultScreen extends BaseScreen{
             }
 
             const startY: number = startLineIndex + 7
-            for(let i = 0; i<lines.length; i++){
+            let i = 0
+            if(this.typedWordsInitialLineIndex<0) this.typedWordsInitialLineIndex = 0;
+            else if (this.typedWordsInitialLineIndex >= lines.length ){
+                this.typedWordsInitialLineIndex =  Math.min(this.typedWordsInitialLineIndex - 3, lines.length)
+            }
+            this.bh.updateLine(
+                startLineIndex + 6, ` Typed- History:   < ${Math.ceil((this.typedWordsInitialLineIndex)/maxLineLimit) + 1}/${Math.ceil(lines.length/maxLineLimit)} >` , false
+            )
+            for(i; ((i + this.typedWordsInitialLineIndex)<lines.length && i<maxLineLimit); i++){
                 this.bh.updateLine(
-                    startY + i, lines[i], false
+                    startY + i, lines[i + this.typedWordsInitialLineIndex], true
                 )
             }
-
+            for(i; i<maxLineLimit; i++) this.bh.clearLine(startY + i)
 
             // guidelines
-            this.bh.updateLine(
-                startLineIndex + 13,
-                `${chalky.bgYellow(" ")} ${chalky.yellow("Color Coding Info: ")}`
-            )
-            this.bh.updateLine(
-                startLineIndex + 14,
-                `${chalky.yellow("y")} - skipped char`
-            )
-            this.bh.updateLine(
-                startLineIndex + 15,
-                `${chalky.green("g")} - correct char`
-            )
-            this.bh.updateLine(
-                startLineIndex + 16,
-                `${chalky.red("e")} - wrong char`
-            )
-            this.bh.updateLine(
-                startLineIndex + 17,
-                `${chalky.red.underline("e")} - extra typed char`
-            )
+            if(terminalDimension.height > 19){
+                this.bh.updateLine(
+                    startLineIndex + 13,
+                    `${chalky.bgYellow(" ")} ${chalky.yellow("Color Coding Info: ")}`
+                )
+                this.bh.updateLine(
+                    startLineIndex + 14,
+                    `${chalky.yellow("y")} - skipped char`
+                )
+                this.bh.updateLine(
+                    startLineIndex + 15,
+                    `${chalky.green("g")} - correct char`
+                )
+                this.bh.updateLine(
+                    startLineIndex + 16,
+                    `${chalky.red("e")} - wrong char`
+                )
+                this.bh.updateLine(
+                    startLineIndex + 17,
+                    `${chalky.red.underline("e")} - extra typed char`
+                )
+            }else{
+                for(let i = 13; i<=17; i++){
+                    this.bh.clearLine(i);
+                }
+            }
         }else{
             this.bh.updateLine(
                 3, chalky.italic("Data not available. Something fishy."), true
@@ -161,4 +182,7 @@ export class ResultScreen extends BaseScreen{
         this.incrementPartialFrameBuffer()
     }
 
+    refresh(): void {
+        this.typedWordsInitialLineIndex = 0
+    }
 }
