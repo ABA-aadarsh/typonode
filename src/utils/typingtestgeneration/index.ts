@@ -1,8 +1,8 @@
 // generate typing test words array based on params
-import fs from "node:fs"
 import { convertToPiglatin } from "./piglatin"
 import { getGlobalStore } from "../store"
 import { terminalDimension } from "../io"
+import { commonWords as wordsList } from "../../assets/commonWords"
 export const newTest = (): string[] => {
     // TODO: update words.json to allow performing words select based on params. Params based customisation for this function as well
 
@@ -21,20 +21,14 @@ export const newTest = (): string[] => {
     }
     if (params.type == "common" || params.type == "piglatin") {
         const isPiglatin = params.type=="piglatin"
-        const filePath = "./assets/commonWords.json"
-        const file = fs.readFileSync(filePath, "utf-8")
-        if (!file) {
-            return []
-        }
-        const json: { words: string[] } = JSON.parse(file)
         let randomIndex:number, isCapital : boolean
         while(linesCount < maxLines){
-            randomIndex = Math.floor(Math.random()*json.words.length)
+            randomIndex = Math.floor(Math.random()*wordsList.length)
             isCapital=false
             if(params.allowUppercase){
                 isCapital = Math.random()<0.5;
             }
-            let w = json.words[randomIndex]
+            let w = wordsList[randomIndex]
             if(isCapital) w = w[0].toUpperCase() + w.slice(1);
             if(isPiglatin) w = convertToPiglatin(w);
             if(charLength + w.length + paddingX + 2 > terminalWidth){
