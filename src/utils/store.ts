@@ -36,7 +36,7 @@ export type  storeDataType = {
         "showFPS": boolean
     }
 }
-const storeFilePath = path.resolve(homedir(), ".config", "typonode","store.json")
+const storeFilePath = path.resolve(homedir(), "typonode.json")
 export const checkStore = ():boolean=>{
     // check if store exist or not
     return fs.existsSync(storeFilePath)
@@ -80,7 +80,7 @@ export const _saveintoStoreJSON = ()=>{
     try {
         fs.writeFileSync(storeFilePath, JSON.stringify(globalStore), "utf-8")
     } catch (error) {
-        console.log(error)
+        fs.unlinkSync(storeFilePath)
     }
 }
 
