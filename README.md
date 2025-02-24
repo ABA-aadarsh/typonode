@@ -2,7 +2,7 @@
 
 Typonode is a minimal typing speed tester inside your terminal. It is built in Nodejs with Typescript and has no external dependencies.
 
-Download page: [LINK](https://www.typonodedownload.netlify.app)
+Download page: [LINK](https://typonodedownload.netlify.app/)
 
 ## Description
 
